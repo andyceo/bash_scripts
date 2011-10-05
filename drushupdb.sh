@@ -6,6 +6,10 @@
 # Author Email: andyceo@yandex.ru
 # Author Homepage: http://andyceo.ruware.com
 
+# Co-author Name: Denis Travnikov
+# Co-author Email: d.travnikov@gmail.com
+# Co-author Homepage: http://code.google.com/u/d.travnikov/
+
 # ENGLISH NOTE: under development. Note that comments in this file
 # and output messages in russian language generally.
 
