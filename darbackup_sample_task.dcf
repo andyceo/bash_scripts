@@ -1,0 +1,14 @@
+all:
+  # Source directory
+  -R /home/andyceo/folder_to_backup
+
+  # Folders to exclude (relative to source directory)
+  #-P folder_to_exlude1 -P folder_to_exlude2
+
+  # Folders to include (relative to source directory)
+  #-g folder_to_include1 -g folder_to_include2
+
+# The following variables not just comments, they used in script!
+##DESTINATION_DIRECTORY=/home/andyceo/Backups
+##BACKUP_FULL_PERIOD=168
+##BACKUP_DIFF_PERIOD=24
