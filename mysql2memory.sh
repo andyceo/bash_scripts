@@ -73,7 +73,7 @@ if [ -z "$mounted" ]
             # ... and mount this folder with copied db in memory instead MySQL datadir
             mount --move $folder_tmp $folder
             chown $mysql_user: $folder
-            chmod $mysql_mode $folder_tmp
+            chmod $mysql_mode $folder
             #remove temporary data
             rm -r /tmp/mysql2memory
             service mysql start
