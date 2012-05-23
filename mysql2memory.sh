@@ -15,19 +15,25 @@
 #  http://citforum.ru/operating_systems/linux/robbins/fs03.shtml
 
 
-echo "Welcome to MySQL-to-memory script!"
+echo -e "\e[1;35mWelcome to MySQL-to-memory script!\e[0m" 1>&2
 echo
 
-echo -e "\e[1;31mroot permissions will be asked.\e[0m" 1>&2
-sudo echo -e "\e[1;32mroot permission granted.\e[0m"
-echo
-
+if [ "$UID" -ne "0" ]
+then
+  echo -e "\e[1;31mYou need to be root.\e[0m" 1>&2
+  exit 1
+fi
 
 # define variables
-mounted=`mount | grep tmpfs | grep mysql`
 folder=/var/lib/mysql
+folder_tmp=/tmp/mysql2memory
+root_uid=0
+mysql_user=mysql
+mysql_uid=`id -u mysql`
+mysql_gid=`id -g mysql`
+mounted=`mount | grep tmpfs | grep $folder`
 # calculate mysql folder size and required memory amount
-folder_size=`sudo du -ksm $folder | awk '{ print $1 }'`
+folder_size=`du -ksm $folder | awk '{ print $1 }'`
 mount_size=`echo "$folder_size * 2" | bc`
 # calculate free memory size and swap usage
 free_memory_size=`free -m | awk '{print $4}' | sed -n '3p'`
@@ -53,26 +59,23 @@ if [ -z "$mounted" ]
         read user_input
         if [ "$user_input" == "y" ]
           then
-            sudo service mysql stop
+            service mysql stop
             set -e
-
             #create temporary tmpfs folder with mysql bases
-            sudo mkdir -p /tmp/mysql2memory
-            sudo mount tmpfs /tmp/mysql2memory -t tmpfs -o size=`echo $folder_size`M
-            sudo cp -apRL $folder /tmp/mysql2memory # "cp /from/* /to" not working on tmpfs
-
-            # main work is here
-            sudo mount tmpfs $folder -t tmpfs -o size=`echo $mount_size`M
-            for i in $(sudo ls /tmp/mysql2memory/mysql); do
-              sudo cp -apRL /tmp/mysql2memory/mysql/$i $folder/$i
+            mkdir -p $folder_tmp
+            chown $mysql_user: $folder_tmp
+            chmod 700 $folder_tmp
+            mount tmpfs $folder_tmp -t tmpfs -o size=`echo $mount_size`M,uid=$mysql_uid,gid=$mysql_gid
+            for i in $(ls $folder); do
+              cp -apRL $folder/$i $folder_tmp/$i
             done
-            #sudo chown mysql:mysql -R $folder
-
+            # ... and mount this folder with copied db in memory instead MySQL datadir
+            mount --move $folder_tmp $folder
+            chown $mysql_user: $folder
+            chmod 700 $folder_tmp
             #remove temporary data
-            sudo umount /tmp/mysql2memory
-            sudo rm -r /tmp/mysql2memory
-
-            sudo service mysql start
+            rm -r /tmp/mysql2memory
+            service mysql start
         fi
       else
         echo "You have not enough free memory."
@@ -84,8 +87,8 @@ if [ -z "$mounted" ]
     read user_input
     if [ "$user_input" == "y" ]
       then
-        sudo service mysql stop
-        sudo umount $folder
-        sudo service mysql start
+        service mysql stop
+        umount $folder
+        service mysql start
     fi
 fi
