@@ -27,11 +27,9 @@ fi
 # define variables
 folder=/var/lib/mysql
 folder_tmp=/tmp/mysql2memory
-root_uid=0
-mysql_user=mysql
-mysql_uid=`id -u $mysql_user`
-mysql_gid=`id -g $mysql_user`
-mysql_mode=0700
+mysql_uid=`stat --format '%u' $folder`
+mysql_gid=`stat --format '%g' $folder`
+mysql_mode=`stat --format '%a' $folder`
 mounted=`mount | grep tmpfs | grep $folder`
 # calculate mysql folder size and required memory amount
 folder_size=`du -ksm $folder | awk '{ print $1 }'`
@@ -64,7 +62,7 @@ if [ -z "$mounted" ]
             set -e
             #create temporary tmpfs folder with mysql bases
             mkdir -p $folder_tmp
-            chown $mysql_user: $folder_tmp
+            chown $mysql_uid:$mysql_gid $folder_tmp
             chmod $mysql_mode $folder_tmp
             mount tmpfs $folder_tmp -t tmpfs -o size=`echo $mount_size`M,uid=$mysql_uid,gid=$mysql_gid,mode=$mysql_mode
             for i in $(ls $folder); do
@@ -72,7 +70,7 @@ if [ -z "$mounted" ]
             done
             # ... and mount this folder with copied db in memory instead MySQL datadir
             mount --move $folder_tmp $folder
-            chown $mysql_user: $folder
+            chown $mysql_uid:$mysql_gid $folder
             chmod $mysql_mode $folder
             #remove temporary data
             rm -r /tmp/mysql2memory
