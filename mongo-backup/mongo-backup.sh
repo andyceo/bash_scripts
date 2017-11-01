@@ -4,16 +4,22 @@ set -e
 
 MONGO_HOST=${MONGO_HOST:-localhost}
 MONGO_PORT=${MONGO_PORT:-27017}
+MONGO_AUTHENTICATION_DATABASE=${MONGO_AUTHENTICATION_DATABASE:-}
 MONGO_ADMIN_USERNAME=${MONGO_ADMIN_USERNAME:-root}
 MONGO_ADMIN_PASSWORD_FILE=${MONGO_ADMIN_PASSWORD_FILE:-/run/secrets/root-at-mongo}
-MONGO_ADMIN_PASSWORD=${MONGO_ADMIN_PASSWORD:-`cat ${MONGO_ADMIN_PASSWORD_FILE}`}
+MONGO_ADMIN_PASSWORD=${MONGO_ADMIN_PASSWORD:-${MONGO_AUTHENTICATION_DATABASE:+`cat ${MONGO_ADMIN_PASSWORD_FILE}`}}
 MONGO_DATA_DIR=${MONGO_DATA_DIR:-/data/db/}
 BACKUP_DIR=${BACKUP_DIR:-/backup/mongo}
 BACKUP_KEEP_COUNT=${BACKUP_KEEP_COUNT:-3}
 BACKUP_RSYNC_SUBDIR=db
 
 function mongo_eval {
-    mongo ${MONGO_HOST}:${MONGO_PORT}/admin -u ${MONGO_ADMIN_USERNAME} -p ${MONGO_ADMIN_PASSWORD} --quiet --eval "printjson($1)"
+    if [[ -z "${MONGO_AUTHENTICATION_DATABASE}" ]]; then
+        mongo ${MONGO_HOST}:${MONGO_PORT} --quiet --eval "printjson($1)"
+    else
+        mongo ${MONGO_HOST}:${MONGO_PORT} -u ${MONGO_ADMIN_USERNAME} -p ${MONGO_ADMIN_PASSWORD} \
+            --authenticationDatabase ${MONGO_AUTHENTICATION_DATABASE} --quiet --eval "printjson($1)"
+    fi
 }
 
 echo "MongoDB backups started at `date --utc --iso-8601=seconds`"
