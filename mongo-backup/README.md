@@ -7,16 +7,18 @@ This is a docker service to backup data Mongo directory to specific remote host 
 
 By default, in case when your mongo is running on docker container, just provide host directories with Mongo data and Mongo backups:
 
-    sudo docker run -d --net=mongo_default -e MONGO_HOST=mongo
-        -v /data/mongo/data:/data/db:ro
-        -v /backup/mongo:/backup/mongo:rw
+    sudo docker run -d --net=mongo_default -e MONGO_HOST=mongo \
+        -v /data/mongo/data:/data/db:ro \
+        -v /backup/mongo:/backup/mongo:rw \
         andyceo/mongo-backup
 
-This will start container that will backup your mongo every day at 2:45 AM (UTC time). To just execute backup once, run:
+This will start container that will backup your mongo every day at 2:45 AM (UTC time). To just execute backup once, and provide Mongo admin user and authentication database, run:
 
-    sudo docker run --rm --net=mongo_default -e MONGO_HOST=mongo
-        -v /data/mongo/data:/data/db:ro
-        -v /backup/mongo:/backup/mongo:rw
+    sudo docker run --rm --net=mongo_default -e MONGO_HOST=mongo \
+        -e MONGO_AUTHENTICATION_DATABASE=admin \
+        -e MONGO_ADMIN_PASSWORD="123qwe" \
+        -v /data/mongo/data:/data/db:ro \
+        -v /backup/mongo:/backup/mongo:rw \
         andyceo/mongo-backup /mongo-backup.sh
 
 
