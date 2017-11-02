@@ -22,6 +22,7 @@ function mongo_eval {
     fi
 }
 
+echo
 echo "MongoDB backups started at `date --utc --iso-8601=seconds`"
 mongo_eval "db.fsyncLock()"
 set +e
@@ -32,3 +33,4 @@ TIMESTAMP=$(date --utc --iso-8601=seconds)
 tar czf ${BACKUP_DIR}/mongo[${TIMESTAMP}].tgz ${BACKUP_DIR}/${BACKUP_RSYNC_SUBDIR}
 find ${BACKUP_DIR} -maxdepth 1 -type f -name "mongo*.tgz" | sort -rn | awk " NR > $BACKUP_KEEP_COUNT" | while read f; do echo "Removing $f..."; rm ${f}; done
 echo "MongoDB backups ended at `date --utc --iso-8601=seconds`"
+echo
