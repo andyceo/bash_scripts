@@ -8,10 +8,8 @@ MONGO_AUTHENTICATION_DATABASE=${MONGO_AUTHENTICATION_DATABASE:-}
 MONGO_ADMIN_USERNAME=${MONGO_ADMIN_USERNAME:-root}
 MONGO_ADMIN_PASSWORD_FILE=${MONGO_ADMIN_PASSWORD_FILE:-/run/secrets/root-at-mongo}
 MONGO_ADMIN_PASSWORD=${MONGO_ADMIN_PASSWORD:-${MONGO_AUTHENTICATION_DATABASE:+`cat ${MONGO_ADMIN_PASSWORD_FILE}`}}
-MONGO_DATA_DIR=${MONGO_DATA_DIR:-/data/db/}
-BACKUP_DIR=${BACKUP_DIR:-/backup/mongo}
+BACKUP_ARCHIVE_DIR=${BACKUP_ARCHIVE_DIR:-}
 BACKUP_KEEP_COUNT=${BACKUP_KEEP_COUNT:-3}
-BACKUP_RSYNC_SUBDIR=${BACKUP_RSYNC_SUBDIR:-db}
 
 function mongo_eval {
     if [[ -z "${MONGO_AUTHENTICATION_DATABASE}" ]]; then
@@ -26,11 +24,16 @@ echo
 echo "MongoDB backups started at `date --utc --iso-8601=seconds`"
 mongo_eval "db.fsyncLock()"
 set +e
-rsync -ahvz --stats --delete-after ${MONGO_DATA_DIR} ${BACKUP_DIR}/${BACKUP_RSYNC_SUBDIR}
+rsync -ahvz --stats --delete-after /data/db /mongobackup
+rsync -ahvz --stats --delete-after /data/configdb /mongobackup
 mongo_eval "db.fsyncUnlock()"
 set -e
-TIMESTAMP=$(date --utc --iso-8601=seconds)
-tar czf ${BACKUP_DIR}/mongo[${TIMESTAMP}].tgz ${BACKUP_DIR}/${BACKUP_RSYNC_SUBDIR}
-find ${BACKUP_DIR} -maxdepth 1 -type f -name "mongo*.tgz" | sort -rn | awk " NR > $BACKUP_KEEP_COUNT" | while read f; do echo "Removing $f..."; rm ${f}; done
+
+if [[ -n "${BACKUP_ARCHIVE_DIR}" ]]; then
+    TIMESTAMP=$(date --utc --iso-8601=seconds)
+    tar czf ${BACKUP_ARCHIVE_DIR}/mongobackup[${TIMESTAMP}].tgz /mongobackup
+    find ${BACKUP_ARCHIVE_DIR} -maxdepth 1 -type f -name "mongobackup*.tgz" | sort -rn | awk " NR > $BACKUP_KEEP_COUNT" | while read f; do echo "Removing $f..."; rm ${f}; done
+fi
+
 echo "MongoDB backups ended at `date --utc --iso-8601=seconds`"
 echo
