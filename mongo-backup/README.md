@@ -45,6 +45,7 @@ To configure this script (or service), use environment variables:
 - `CRON_DAY` (default is `*`): cron-specific day
 - `CRON_MONTH` (default is `*`): cron-specific month
 - `CRON_DAY_OF_WEEK` (default is `*`): cron-specific day of week 
+- `BACKUP_DIR` (default is `/mongobackup`): directory where to rsync Mongo databases (`db` and `configdb`). This variable value is used "as-is" in `rsync` as destination directory.
 - `BACKUP_ARCHIVE_DIR` (no default value, not required): This directory will store `BACKUP_KEEP_COUNT` archived copies of `/mongobackup`. If no value provided, no archiving would be done.
 - `BACKUP_KEEP_COUNT` (default is `3`): how many archived `mongo-TIMESTAMP.tgz` copies of data directory to store
 
