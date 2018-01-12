@@ -40,6 +40,8 @@ To configure this script (or service), use environment variables:
 - `MONGO_ADMIN_USERNAME` (default is `root`): Mongo server administrator user name
 - `MONGO_ADMIN_PASSWORD_FILE` (default is `/run/secrets/root-at-mongo`): File that stores Mongo administrator password. Content of this file will be provided to `MONGO_ADMIN_PASSWORD` variable as-is, if `MONGO_ADMIN_PASSWORD` is not provided,
 - `MONGO_ADMIN_PASSWORD` (default is `MONGO_ADMIN_PASSWORD_FILE` content): Mongo server administrator user password
+- `MONGO_DB_DIR` (default is `/data/db`): directory that store MongoDB databases. Note that this variable value would be used by rsync directly as source path, so be careful with trailing slashes
+- `MONGO_CONFIGDB_DIR` (default is `/data/configdb`): directory that store MongoDB configdb. Note that this variable value would be used by rsync directly as source path, so be careful with trailing slashes
 - `CRON_MINUTE` (default is `45`): cron-specific minute
 - `CRON_HOUR` (default is `2`): cron-specific hour
 - `CRON_DAY` (default is `*`): cron-specific day
