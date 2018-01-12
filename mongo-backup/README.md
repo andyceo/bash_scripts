@@ -40,16 +40,18 @@ To configure this script (or service), use environment variables:
 - `MONGO_ADMIN_USERNAME` (default is `root`): Mongo server administrator user name
 - `MONGO_ADMIN_PASSWORD_FILE` (default is `/run/secrets/root-at-mongo`): File that stores Mongo administrator password. Content of this file will be provided to `MONGO_ADMIN_PASSWORD` variable as-is, if `MONGO_ADMIN_PASSWORD` is not provided,
 - `MONGO_ADMIN_PASSWORD` (default is `MONGO_ADMIN_PASSWORD_FILE` content): Mongo server administrator user password
-- `MONGO_DB_DIR` (default is `/data/db`): directory that store MongoDB databases. Note that this variable value would be used by rsync directly as source path, so be careful with trailing slashes
-- `MONGO_CONFIGDB_DIR` (default is `/data/configdb`): directory that store MongoDB configdb. Note that this variable value would be used by rsync directly as source path, so be careful with trailing slashes
+- `MONGO_DB_DIR` (default is `/data/db`): directory that store MongoDB databases. Note that this variable value would be used by rsync directly as source path, so be careful with trailing slashes. Typically you should not use this variable and mount directories from host system to default container directories with `docker -v` option instead of using this variables.
+- `MONGO_CONFIGDB_DIR` (default is `/data/configdb`): directory that store MongoDB configdb. Note that this variable value would be used by rsync directly as source path, so be careful with trailing slashes. Typically you should not use this variable and mount directories from host system to default container directories with `docker -v` option instead of using this variables.
 - `CRON_MINUTE` (default is `45`): cron-specific minute
 - `CRON_HOUR` (default is `2`): cron-specific hour
 - `CRON_DAY` (default is `*`): cron-specific day
 - `CRON_MONTH` (default is `*`): cron-specific month
 - `CRON_DAY_OF_WEEK` (default is `*`): cron-specific day of week 
-- `BACKUP_DIR` (default is `/mongobackup`): directory where to rsync Mongo databases (`db` and `configdb`). This variable value is used "as-is" in `rsync` as destination directory.
+- `BACKUP_DIR` (default is `/mongobackup`): directory where to rsync Mongo databases (`db` and `configdb`). This variable value is used "as-is" in `rsync` as destination directory. Typically you should not use this variable and mount directories from host system to default container directories with `docker -v` option instead of using this variables.
 - `BACKUP_ARCHIVE_DIR` (no default value, not required): This directory will store `BACKUP_KEEP_COUNT` archived copies of `/mongobackup`. If no value provided, no archiving would be done.
 - `BACKUP_KEEP_COUNT` (default is `3`): how many archived `mongo-TIMESTAMP.tgz` copies of data directory to store
+
+Note that you typically should not use variables `MONGO_DB_DIR`, `MONGO_CONFIGDB_DIR`, `BACKUP_DIR` but mount host directories to default container directories instead. This variables are designed to customize script behaviour in case it executed on host system directly, not in container environment.
 
 
 ## Volumes
