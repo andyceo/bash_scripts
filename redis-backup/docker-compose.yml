@@ -1,0 +1,24 @@
+version: '3.4'
+
+services:
+
+  redis:
+    image: redis:4-alpine
+    volumes:
+      - redis:/data
+
+  redis-backup:
+    image: redis-backup
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    environment:
+      REDIS_HOST: "redis"
+    volumes:
+      - redis:/data:ro
+      - /backups/redis:/redisbackup:rw
+    depends_on:
+      - redis
+
+volumes:
+  redis:
