@@ -3,8 +3,8 @@
 # Original file was modified 2013-09-23 15:03:23.000000000 +0400
 # and last edited 2014-12-15 11:29:47.414363278 +0300
 
-dir=`pwd`
-find * -maxdepth 0 -type d | while read j; do
+DIR=${1:-`pwd`}
+find ${DIR%/}/* -maxdepth 0 -type d | while read j; do
   cd $j
   if [ -d ".git" ]; then
     if [ -d ".git/svn" ]; then
@@ -20,7 +20,7 @@ find * -maxdepth 0 -type d | while read j; do
   else
     echo "----------- $j - UNKNOWN -----------"
   fi;
-  cd $dir
+  cd $DIR
   echo "--------------"
   echo
 done
