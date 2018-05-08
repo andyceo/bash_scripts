@@ -57,12 +57,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Get SSL certificates expiration info')
 
     parser.add_argument('-d', '--domains', nargs='+', metavar='example.com example.org', default=os.environ.get(
-        'DOMAINS', ''), help='Domains to check certificates on. Use whitespace to separate domains. '
+        'DOMAINS', []), help='Domains to check certificates on. Use whitespace to separate domains. '
                              'Do not use schemes (http, https). If this option is not set, '
                              'DOMAINS environment variable is used')
 
     parser.add_argument('-p', '--path', nargs=1, metavar='PATH', default=os.environ.get(
-        'CERTBOT_ETC_PATH', os.environ.get('LETSENCRYPT_ETC_PATH', '/etc/letsencrypt')),
+        'CERTBOT_ETC_PATH', os.environ.get('LETSENCRYPT_ETC_PATH', ['/etc/letsencrypt'])),
                         help='Path to certbot/letsencrypt certificate directory. If not passed, '
                              'CERTBOT_ETC_PATH or LETSENCRYPT_ETC_PATH environment variable are used '
                              '(CERTBOT_ETC_PATH take precedence), if none of them are present, '
