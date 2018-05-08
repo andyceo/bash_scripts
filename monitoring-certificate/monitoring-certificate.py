@@ -61,7 +61,7 @@ if __name__ == "__main__":
                              'Do not use schemes (http, https). If this option is not set, '
                              'DOMAINS environment variable is used')
 
-    parser.add_argument('-p', '--path', nargs=1, metavar='/etc/letsencrypt', default=os.environ.get(
+    parser.add_argument('-p', '--path', nargs=1, metavar='PATH', default=os.environ.get(
         'CERTBOT_ETC_PATH', os.environ.get('LETSENCRYPT_ETC_PATH', '/etc/letsencrypt')),
                         help='Path to certbot/letsencrypt certificate directory. If not passed, '
                              'CERTBOT_ETC_PATH or LETSENCRYPT_ETC_PATH environment variable are used '
