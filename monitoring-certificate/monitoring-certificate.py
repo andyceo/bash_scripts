@@ -5,6 +5,7 @@ from pylibs import influxdb
 from pylibs import utils
 import argparse
 import os
+import sys
 import time
 
 SEC_IN_DAY = 60 * 60 * 24  # number of seconds in a day
@@ -12,30 +13,49 @@ MAX_CERT_AGE = 90  # maximum certificate age in days
 THRESHOLD = 25  # minimum time before expiration alert
 
 
-def save_to_influxdb(timestamp, domain, check_result: bool):
+def check_certbot_dir(d, save_to_influxdb_flag: bool):
+    t = time.time()
+    file_threshold = SEC_IN_DAY * (MAX_CERT_AGE - THRESHOLD)
+    for entry in os.scandir(d + '/live'):
+        if not entry.name.startswith('.') and entry.is_dir():
+            age_file_check = t - entry.stat().st_mtime < file_threshold
+            age_cert_check = utils.get_cert_expiration_timestamp(entry.name) - t > THRESHOLD
+            check_result = age_file_check and age_cert_check
+
+            if save_to_influxdb_flag:
+                save_to_influxdb(t, entry.name, age_file_check, age_cert_check, check_result)
+            else:
+                print_check_result(entry.name, age_file_check, age_cert_check, check_result)
+
+
+def save_to_influxdb(timestamp, domain, age_file_check: bool, age_cert_check: bool, check_result: bool):
     try:
         json_body = [{
             "time": timestamp,
             "measurement": "monitoring-certificate",
             "tags": {'domain': domain},
-            "fields": {'check_result': check_result}
+            "fields": {
+                'age_file_check': age_file_check,
+                'age_cert_check': age_cert_check,
+                'check_result': check_result
+            }
         }]
         client = influxdb.InfluxDBClient(args.influxdb_host, args.influxdb_port, args.influxdb_user,
                                          args.influxdb_password, args.influxdb_database)
         client.write_points(json_body, time_precision='s')
-        utils.message('Domain {}, check result {} was saved to InfluxDB on timestamp {}'.
-                      format(domain, check_result, timestamp))
+        utils.message('Domain {}, file age check: {}, cert age_check: {}, check result {} was saved to InfluxDB on '
+                      'timestamp {}'.format(domain, age_file_check, age_cert_check, check_result, timestamp))
     except BaseException:
-        utils.message('Error saving domain {}, check result {} to InfluxDB on timestamp {}!'.
-                      format(domain, check_result, timestamp))
+        utils.message('Error saving domain {}, file age check: {}, cert age_check: {}, check result {} to InfluxDB on '
+                      'timestamp {}!'.format(domain, age_file_check, age_cert_check, check_result, timestamp))
 
 
 def print_check_result(domain, age_file_check: bool, age_cert_check: bool, check_result: bool):
     if check_result:
-        print(color('[PASS] {}, file age check {}, cert age check {}, result: {}'.format(
+        print(color('[PASS] {}, file age check {}, cert age check {}, check result: {}'.format(
             domain, age_file_check, age_cert_check, check_result), fg='white', bg='green', style='bold'))
     else:
-        print(color('[FAIL] {}, file age check {}, cert age check {}, result: {}'.format(
+        print(color('[FAIL] {}, file age check {}, cert age check {}, check result: {}'.format(
             domain, age_file_check, age_cert_check, check_result), fg='white', bg='red', style='bold'))
 
 
@@ -49,6 +69,12 @@ if __name__ == "__main__":
                              '(CERTBOT_ETC_PATH take precedence), if none of them are present, '
                              '/etc/letsencrypt used as default')
 
+    parser.add_argument('--daemon', action='store_true', help='Start script in daemon mode. See --interval')
+
+    parser.add_argument('--interval', nargs=1, metavar='SECONDS', default=SEC_IN_DAY, type=int,
+                        help='Set daemon mode check interval in SECONDS. Default interval is 1 day. This option is '
+                             'only make sense if --daemon option is set')
+
     parser.add_argument('--save-to-influxdb', action='store_true', help='Save domains check results to influxdb '
                                                                         'or just output them to console')
 
@@ -56,14 +82,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    t = time.time()
-    file_threshold = SEC_IN_DAY * (MAX_CERT_AGE - THRESHOLD)
-    for entry in os.scandir(args.path[0].rstrip(os.sep) + '/live'):
-        if not entry.name.startswith('.') and entry.is_dir():
-            age_file_check = t - entry.stat().st_mtime < file_threshold
-            age_cert_check = utils.get_cert_expiration_timestamp(entry.name) - t > THRESHOLD
-            check_result = age_file_check and age_cert_check
-            if args.save_to_influxdb:
-                save_to_influxdb(t, entry.name, check_result)
-            else:
-                print_check_result(entry.name, age_file_check, age_cert_check, check_result)
+    if args.daemon:
+        utils.message('monitoring-certificate daemon started.')
+        while True:
+            check_certbot_dir(args.path[0].rstrip(os.sep), args.save_to_influxdb)
+            time.sleep(int(args.interval[0]))
+            sys.stdout.flush()
+
+    else:
+        check_certbot_dir(args.path[0].rstrip(os.sep), args.save_to_influxdb)
