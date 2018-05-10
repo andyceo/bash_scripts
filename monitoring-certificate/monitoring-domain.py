@@ -30,7 +30,7 @@ def save_to_influxdb(timestamp, domain, check_result: bool):
                       format(domain, check_result, timestamp))
 
 
-def print_check_result(domain, age_file_check: bool, age_cert_check: bool, check_result: bool):
+def print_check_result(domain, age_file_check, age_cert_check, check_result: bool):
     if check_result:
         print(color('[PASS] {}, file age check {}, cert age check {}, result: {}'.format(
             domain, age_file_check, age_cert_check, check_result), fg='white', bg='green', style='bold'))
@@ -41,6 +41,11 @@ def print_check_result(domain, age_file_check: bool, age_cert_check: bool, check
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Get SSL certificates expiration info')
+
+    parser.add_argument('-d', '--domains', nargs='+', metavar='example.com example.org', default=os.environ.get(
+        'DOMAINS', []), help='Domains to check certificates on. Use whitespace to separate domains. '
+                             'Do not use schemes (http, https). If this option is not set, '
+                             'DOMAINS environment variable is used')
 
     parser.add_argument('-p', '--path', nargs=1, metavar='PATH', default=os.environ.get(
         'CERTBOT_ETC_PATH', os.environ.get('LETSENCRYPT_ETC_PATH', ['/etc/letsencrypt'])),
@@ -56,6 +61,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    domains_traversed = {}  # we will set True for domain traversed in filesystem loop
     t = time.time()
     file_threshold = SEC_IN_DAY * (MAX_CERT_AGE - THRESHOLD)
     for entry in os.scandir(args.path[0].rstrip(os.sep) + '/live'):
@@ -63,7 +69,16 @@ if __name__ == "__main__":
             age_file_check = t - entry.stat().st_mtime < file_threshold
             age_cert_check = utils.get_cert_expiration_timestamp(entry.name) - t > THRESHOLD
             check_result = age_file_check and age_cert_check
+            domains_traversed[entry.name] = True
             if args.save_to_influxdb:
                 save_to_influxdb(t, entry.name, check_result)
             else:
                 print_check_result(entry.name, age_file_check, age_cert_check, check_result)
+
+    for domain in args.domains:
+        if domain not in domains_traversed:
+            age_cert_check = utils.get_cert_expiration_timestamp(domain) - t > THRESHOLD
+            if args.save_to_influxdb:
+                save_to_influxdb(t, domain, age_cert_check)
+            else:
+                print_check_result(domain, 'unavailable', age_cert_check, age_cert_check)
