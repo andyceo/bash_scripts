@@ -1,29 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from colors import color
-from dateutil.parser import parse as parse_date
 from pylibs import influxdb
 from pylibs import utils
 import argparse
 import os
-import ssl
-import socket
 import time
 
 SEC_IN_DAY = 60 * 60 * 24  # number of seconds in a day
 MAX_CERT_AGE = 90  # maximum certificate age in days
 THRESHOLD = 25  # minimum time before expiration alert
-
-
-def get_cert_expiration(url) -> int:
-    try:
-        ctx = ssl.create_default_context()
-        s = ctx.wrap_socket(socket.socket(), server_hostname=url)
-        s.connect((url, 443))
-        cert = s.getpeercert()
-        return round(time.mktime(parse_date(cert['notAfter']).timetuple()))
-    except ssl.SSLError:
-        return 0
 
 
 def save_to_influxdb(timestamp, domain, check_result: bool):
@@ -81,7 +67,7 @@ if __name__ == "__main__":
     for entry in os.scandir(args.path[0].rstrip(os.sep) + '/live'):
         if not entry.name.startswith('.') and entry.is_dir():
             age_file_check = t - entry.stat().st_mtime < file_threshold
-            age_cert_check = get_cert_expiration(entry.name) - t > THRESHOLD
+            age_cert_check = utils.get_cert_expiration_timestamp(entry.name) - t > THRESHOLD
             check_result = age_file_check and age_cert_check
             domains_traversed[entry.name] = True
             if args.save_to_influxdb:
@@ -91,7 +77,7 @@ if __name__ == "__main__":
 
     for domain in args.domains:
         if domain not in domains_traversed:
-            age_cert_check = get_cert_expiration(domain) - t > THRESHOLD
+            age_cert_check = utils.get_cert_expiration_timestamp(domain) - t > THRESHOLD
             if args.save_to_influxdb:
                 save_to_influxdb(t, domain, age_cert_check)
             else:
