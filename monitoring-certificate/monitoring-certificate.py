@@ -69,16 +69,12 @@ if __name__ == "__main__":
                              '(CERTBOT_ETC_PATH take precedence), if none of them are present, '
                              '/etc/letsencrypt used as default')
 
-    parser.add_argument('--daemon', action='store_true', help='Start script in daemon mode. See --interval')
-
-    parser.add_argument('--interval', nargs=1, metavar='SECONDS', default=SEC_IN_DAY, type=int,
-                        help='Set daemon mode check interval in SECONDS. Default interval is 1 day. This option is '
-                             'only make sense if --daemon option is set')
+    utils.argparse_add_daemon_options(parser, SEC_IN_DAY)
 
     parser.add_argument('--save-to-influxdb', action='store_true', help='Save domains check results to influxdb '
                                                                         'or just output them to console')
 
-    influxdb.add_influxdb_options(parser)
+    influxdb.argparse_add_influxdb_options(parser)
 
     args = parser.parse_args()
 
