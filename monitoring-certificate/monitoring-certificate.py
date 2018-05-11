@@ -29,9 +29,10 @@ def check_certbot_dir(d, save_to_influxdb_flag: bool):
 
 
 def save_to_influxdb(timestamp, domain, age_file_check: bool, age_cert_check: bool, check_result: bool):
+    influxdb_password = utils.argparse_get_filezed_value(args, 'influxdb-password')
     try:
         json_body = [{
-            "time": timestamp,
+            "time": influxdb.timestamp_to_influxdb_format(timestamp),
             "measurement": "monitoring-certificate",
             "tags": {'domain': domain},
             "fields": {
@@ -41,8 +42,8 @@ def save_to_influxdb(timestamp, domain, age_file_check: bool, age_cert_check: bo
             }
         }]
         client = influxdb.InfluxDBClient(args.influxdb_host, args.influxdb_port, args.influxdb_user,
-                                         args.influxdb_password, args.influxdb_database)
-        client.write_points(json_body, time_precision='s')
+                                         influxdb_password, args.influxdb_database)
+        client.write_points(json_body)
         utils.message('Domain {}, file age check: {}, cert age_check: {}, check result {} was saved to InfluxDB on '
                       'timestamp {}'.format(domain, age_file_check, age_cert_check, check_result, timestamp))
     except BaseException:
@@ -60,7 +61,7 @@ def print_check_result(domain, age_file_check: bool, age_cert_check: bool, check
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Get SSL certificates expiration info')
+    parser = argparse.ArgumentParser(description="Get Let's Encrypt (Certbot) SSL certificates expiration info")
 
     parser.add_argument('-p', '--path', nargs=1, metavar='PATH', default=os.environ.get(
         'CERTBOT_ETC_PATH', os.environ.get('LETSENCRYPT_ETC_PATH', ['/etc/letsencrypt'])),
@@ -82,8 +83,8 @@ if __name__ == "__main__":
         utils.message('monitoring-certificate daemon started.')
         while True:
             check_certbot_dir(args.path[0].rstrip(os.sep), args.save_to_influxdb)
-            time.sleep(int(args.interval[0]))
             sys.stdout.flush()
+            time.sleep(int(args.interval[0]))
 
     else:
         check_certbot_dir(args.path[0].rstrip(os.sep), args.save_to_influxdb)
