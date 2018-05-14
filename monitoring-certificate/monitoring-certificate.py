@@ -63,7 +63,7 @@ def print_check_result(domain, age_file_check: bool, age_cert_check: bool, check
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Get Let's Encrypt (Certbot) SSL certificates expiration info")
 
-    parser.add_argument('-p', '--path', nargs=1, metavar='PATH', default=os.environ.get(
+    parser.add_argument('-p', '--path', metavar='PATH', default=os.environ.get(
         'CERTBOT_ETC_PATH', os.environ.get('LETSENCRYPT_ETC_PATH', ['/etc/letsencrypt'])),
                         help='Path to certbot/letsencrypt certificate directory. If not passed, '
                              'CERTBOT_ETC_PATH or LETSENCRYPT_ETC_PATH environment variable are used '
@@ -82,9 +82,9 @@ if __name__ == "__main__":
     if args.daemon:
         utils.message('monitoring-certificate daemon started.')
         while True:
-            check_certbot_dir(args.path[0].rstrip(os.sep), True)
+            check_certbot_dir(args.path.rstrip(os.sep), True)
             sys.stdout.flush()
-            time.sleep(int(args.interval[0]))
+            time.sleep(int(args.interval))
 
     else:
-        check_certbot_dir(args.path[0].rstrip(os.sep), args.save_to_influxdb)
+        check_certbot_dir(args.path.rstrip(os.sep), args.save_to_influxdb)
