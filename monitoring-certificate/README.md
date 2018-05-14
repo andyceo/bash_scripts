@@ -7,13 +7,17 @@ This is a dockerized script to monitor your SSL Let's Encrypt (Certbot) certific
 
 You must provide your Let's Encrypt (Certbot) data directory (usually `/etc/letsencrypt`), that store certificate data, from your host system to docker container with `-v` option, for automated domains discovery and certificate age check based on directory modification timestamp:
 
-    sudo docker run --rm -v /etc/letsencrypt:/etc/letsencrypt:ro andyceo/monitoring-certificate
+    docker run --rm -v /etc/letsencrypt:/etc/letsencrypt:ro andyceo/monitoring-certificate
 
 The command above show you colorized domains expiration data check results.
 
+Use `-h` option to view help message:
+
+    docker run --rm -v /etc/letsencrypt:/etc/letsencrypt:ro andyceo/monitoring-certificate -h
+
 You can add InfluxDB connection data and save data to provided database in `monitoring-certificate` measurement with simple log output instead colorized output:
 
-    sudo docker run --rm -v /etc/letsencrypt:/etc/letsencrypt:ro \
+    docker run --rm -v /etc/letsencrypt:/etc/letsencrypt:ro \
         -e INFLUXDB_HOST=localhost \
         -e INFLUXDB_PORT=8086 \
         -e INFLUXDB_USER=root \
@@ -21,7 +25,15 @@ You can add InfluxDB connection data and save data to provided database in `moni
         -e INFLUXDB_DATABASE=monitoring \
         andyceo/monitoring-certificate --save-to-influxdb
 
-Daemon mode `--daemon` always make saving data to InfluxDB.
+Daemon mode `--daemon` always make saving data to InfluxDB. Use this mode if you want to create dockerized certificates monitoring service:
+
+    docker run -d -v /etc/letsencrypt:/etc/letsencrypt:ro \
+        -e INFLUXDB_HOST=localhost \
+        -e INFLUXDB_PORT=8086 \
+        -e INFLUXDB_USER=root \
+        -e INFLUXDB_PASSWORD=yoursecret \
+        -e INFLUXDB_DATABASE=monitoring \
+        andyceo/monitoring-certificate --daemon
 
 
 ## Configuration
