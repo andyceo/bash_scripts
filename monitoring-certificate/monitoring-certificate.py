@@ -82,7 +82,7 @@ if __name__ == "__main__":
     if args.daemon:
         utils.message('monitoring-certificate daemon started.')
         while True:
-            check_certbot_dir(args.path[0].rstrip(os.sep), args.save_to_influxdb)
+            check_certbot_dir(args.path[0].rstrip(os.sep), True)
             sys.stdout.flush()
             time.sleep(int(args.interval[0]))
 
