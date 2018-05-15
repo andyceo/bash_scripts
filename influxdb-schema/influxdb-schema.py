@@ -34,7 +34,7 @@ def influxdb_get_retention_policies(c):
     return rs.get_points()
 
 
-def influxdb_get_series(c, database):
+def influxdb_get_series(c, database: str):
     """
     Return series from InfluxDB.
     :param c: InfluxDB client
@@ -43,7 +43,7 @@ def influxdb_get_series(c, database):
     return rs.get_points()
 
 
-def influxdb_get_measurements(c, database):
+def influxdb_get_measurements(c, database: str):
     """
     Return measurements from InfluxDB.
     :param c: InfluxDB client
@@ -52,7 +52,7 @@ def influxdb_get_measurements(c, database):
     return rs.get_points()
 
 
-def influxdb_get_tag_keys(c, database):
+def influxdb_get_tag_keys(c, database: str):
     """
     Return tag keys from InfluxDB.
     :param c: InfluxDB client
@@ -61,7 +61,7 @@ def influxdb_get_tag_keys(c, database):
     return rs.get_points()
 
 
-def influxdb_get_tag_values(c, database, tag_keys):
+def influxdb_get_tag_values(c, database: str, tag_keys):
     """
     Return tag values from InfluxDB.
     :param c: InfluxDB client
@@ -76,7 +76,7 @@ def influxdb_get_tag_values(c, database, tag_keys):
     return rs.get_points()
 
 
-def influxdb_get_field_keys(c, database):
+def influxdb_get_field_keys(c, database: str):
     """
     Return field keys from InfluxDB.
     :param c: InfluxDB client
