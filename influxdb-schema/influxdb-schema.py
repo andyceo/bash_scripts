@@ -12,7 +12,7 @@ def influxdb_get_users(c):
     Return users from InfluxDB.
     :param c: InfluxDB client
     """
-    rs = client.query('SHOW USERS')
+    rs = c.query('SHOW USERS')
     return rs.get_points()
 
 
@@ -21,7 +21,7 @@ def influxdb_get_databases(c):
     Return databases from InfluxDB.
     :param c: InfluxDB client
     """
-    rs = client.query('SHOW DATABASES')
+    rs = c.query('SHOW DATABASES')
     return rs.get_points()
 
 
@@ -30,7 +30,7 @@ def influxdb_get_retention_policies(c):
     Return retention policies from InfluxDB.
     :param c: InfluxDB client
     """
-    rs = client.query('SHOW RETENTION POLICIES')
+    rs = c.query('SHOW RETENTION POLICIES')
     return rs.get_points()
 
 
@@ -39,7 +39,7 @@ def influxdb_get_series(c, database):
     Return series from InfluxDB.
     :param c: InfluxDB client
     """
-    rs = client.query(add_on_clause('SHOW SERIES', database))
+    rs = c.query(add_on_clause('SHOW SERIES', database))
     return rs.get_points()
 
 
@@ -48,7 +48,7 @@ def influxdb_get_measurements(c, database):
     Return measurements from InfluxDB.
     :param c: InfluxDB client
     """
-    rs = client.query(add_on_clause('SHOW MEASUREMENTS', database))
+    rs = c.query(add_on_clause('SHOW MEASUREMENTS', database))
     return rs.get_points()
 
 
@@ -57,7 +57,7 @@ def influxdb_get_tag_keys(c, database):
     Return tag keys from InfluxDB.
     :param c: InfluxDB client
     """
-    rs = client.query(add_on_clause('SHOW TAG KEYS', database))
+    rs = c.query(add_on_clause('SHOW TAG KEYS', database))
     return rs.get_points()
 
 
@@ -72,7 +72,7 @@ def influxdb_get_tag_values(c, database, tag_keys):
         query += ' WITH KEY IN ("{}")'.format('", "'.join(tag_keys))
     except TypeError:
         query += ' WITH KEY {}'.format(tag_keys)
-    rs = client.query(query)
+    rs = c.query(query)
     return rs.get_points()
 
 
@@ -81,7 +81,7 @@ def influxdb_get_field_keys(c, database):
     Return field keys from InfluxDB.
     :param c: InfluxDB client
     """
-    rs = client.query(add_on_clause('SHOW FIELD KEYS', database))
+    rs = c.query(add_on_clause('SHOW FIELD KEYS', database))
     return rs.get_points()
 
 
