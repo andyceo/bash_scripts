@@ -38,6 +38,7 @@ def influxdb_get_series(c, database: str):
     """
     Return series from InfluxDB.
     :param c: InfluxDB client
+    :param database: database on which query executes
     """
     rs = c.query(add_on_clause('SHOW SERIES', database))
     return rs.get_points()
@@ -47,6 +48,7 @@ def influxdb_get_measurements(c, database: str):
     """
     Return measurements from InfluxDB.
     :param c: InfluxDB client
+    :param database: database on which query executes
     """
     rs = c.query(add_on_clause('SHOW MEASUREMENTS', database))
     return rs.get_points()
@@ -56,6 +58,7 @@ def influxdb_get_tag_keys(c, database: str):
     """
     Return tag keys from InfluxDB.
     :param c: InfluxDB client
+    :param database: database on which query executes
     """
     rs = c.query(add_on_clause('SHOW TAG KEYS', database))
     return rs.get_points()
@@ -65,6 +68,8 @@ def influxdb_get_tag_values(c, database: str, tag_keys):
     """
     Return tag values from InfluxDB.
     :param c: InfluxDB client
+    :param database: database on which query executes
+    :param tag_keys: tag keys iterable (list for example) or string
     """
     query = add_on_clause('SHOW TAG VALUES', database)
     try:
@@ -79,6 +84,7 @@ def influxdb_get_tag_values(c, database: str, tag_keys):
 def influxdb_get_field_keys(c, database: str):
     """
     Return field keys from InfluxDB.
+    :param database: database on which query executes
     :param c: InfluxDB client
     """
     rs = c.query(add_on_clause('SHOW FIELD KEYS', database))
