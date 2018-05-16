@@ -64,7 +64,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Get Let's Encrypt (Certbot) SSL certificates expiration info")
 
     parser.add_argument('-p', '--path', metavar='PATH', default=os.environ.get(
-        'CERTBOT_ETC_PATH', os.environ.get('LETSENCRYPT_ETC_PATH', ['/etc/letsencrypt'])),
+        'CERTBOT_ETC_PATH', os.environ.get('LETSENCRYPT_ETC_PATH', '/etc/letsencrypt')),
                         help='Path to certbot/letsencrypt certificate directory. If not passed, '
                              'CERTBOT_ETC_PATH or LETSENCRYPT_ETC_PATH environment variable are used '
                              '(CERTBOT_ETC_PATH take precedence), if none of them are present, '
