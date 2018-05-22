@@ -7,6 +7,16 @@ import argparse
 import tabulate
 
 
+def influxdb_get_supscriptions(c, database: str):
+    """
+    Return subscriptions info from InfluxDB.
+    :param c: InfluxDB client
+    :param database: database on which query executes
+    """
+    rs = c.query('SHOW SUBSCRIPTIONS')
+    return rs.get_points()
+
+
 def influxdb_get_users(c):
     """
     Return users from InfluxDB.
@@ -138,3 +148,6 @@ if __name__ == "__main__":
 
     print(color('Field Keys:', fg='white', bg='green', style='bold'))
     print_points(influxdb_get_field_keys(client, args.influxdb_database))
+
+    print(color('Subscriptions:', fg='white', bg='green', style='bold'))
+    print_points(influxdb_get_supscriptions(client, args.influxdb_database))
