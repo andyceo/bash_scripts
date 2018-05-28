@@ -7,6 +7,10 @@ import argparse
 import tabulate
 
 
+# @todo add show continuous queries, etc with SHOW {SOMETHING}
+# @todo add ability to print separate sections and dynamically change lines_limit in print_points()
+
+
 def influxdb_get_supscriptions(c, database: str):
     """
     Return subscriptions info from InfluxDB.
@@ -106,7 +110,18 @@ def add_on_clause(query: str, database: str) -> str:
 
 
 def print_points(points):
-    print(tabulate.tabulate(points, headers="keys"))
+    lines = tabulate.tabulate(points, headers="keys").splitlines()
+    lines_limit = 25
+    i = 1
+    for line in lines:
+        if i > lines_limit + 2:
+            length = len(lines)
+            # 2 lines is for header and line after header
+            print('-----There is more {} lines (total {})-----'.format(length - lines_limit - 2, length - 2))
+            break
+        else:
+            print(line)
+            i += 1
     print()
 
 
