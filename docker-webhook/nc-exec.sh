@@ -67,7 +67,16 @@ while true ; do
       ;;
 
     "service-update")
-      echo "SErvice-update: construction in progress..."
+      service=arg1
+      image=arg2
+      # @todo use curl and socket: sudo curl --unix-socket /var/run/docker.sock http:/containers/json
+      # fix image is always exists...
+      if [ -n "$image" ]
+      then
+        echo docker service update ${service} --force --with-registry-auth --image=${image}
+      else
+        echo docker service update ${service} --force --with-registry-auth
+      fi
       ;;
     *)
       echo "Unknown command: ${command}, or tag: ${tag}, nothing to do"
