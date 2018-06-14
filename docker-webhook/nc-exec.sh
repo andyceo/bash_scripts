@@ -47,9 +47,7 @@ while true ; do
   case "${command}" in
     "run")
       tag="${arg1}"
-
       echo "Re-run containers version $tag :"
-
       CONTAINERS="test1.example.com test2.example.com"
       for name in $CONTAINERS
       do
@@ -58,13 +56,9 @@ while true ; do
           docker rm -f $name
         fi
       done
-
       PORT_PREFIX=2001 && docker run -d -p `echo $PORT_PREFIX+80|bc`:80 --name test1.example.com -h test1.example.com --restart always --link redis-master --link redis-slave --link memcached -e APP_ENV=dev -e APP_HOST=test1.example.com build.example.com:5000/example.com/app:$tag
-
       PORT_PREFIX=2002 && docker run -d -p `echo $PORT_PREFIX+80|bc`:80 --name test2.example.com -h test2.example.com --restart always --link redis-master --link redis-slave --link memcached -e APP_ENV=stage -e APP_HOST=test2.example.com build.example.com:5000/example.com/app:$tag
-
       docker images --format "table {{.ID}}\t{{.Repository}}\t{{.Tag}}" | grep "example.com/app" | grep -v $tag | cut -d" " -f1 | xargs docker rmi
-
       ;;
 
     "service-update")
@@ -74,9 +68,21 @@ while true ; do
         echo "Wrong service-update command arguments! Service and image both must be set."
       else
         version=$(curl -s --unix-socket ${SOCKET_PATH} "http:/services/${service}" | grep -oP 'Version.*?Index.*?\d.*?},' | grep -oP '\d+')
-        curl --unix-socket ${SOCKET_PATH} -v -H 'Content-Type: application/json' -d ' { "name": "'"${service}"'", "TaskTemplate":{ "ContainerSpec": { "Image": "'"${image}"'", "Runtime": "container" } } }' "http:/services/${service}/update?version=${version}"
+        echo "Version=${version}. Currently not implemented! Need to pass old service parameters to Docker API."
+        #curl --unix-socket ${SOCKET_PATH} -v -H 'Content-Type: application/json' -d ' { "name": "'"${service}"'", "TaskTemplate":{ "ContainerSpec": { "Image": "'"${image}"'", "Runtime": "container" } } }' "http:/services/${service}/update?version=${version}"
       fi
       ;;
+
+    "stack-deploy")
+      stack="${arg1}"
+      filepath="${arg2}"
+      if [ -z "${stack}" ] || [ -z "${filepath}" ]; then
+        echo "Wrong stack-deploy command arguments! Stack and filepath both must be set."
+      else
+        docker stack deploy -c ${filepath} ${stack}
+      fi
+      ;;
+
     *)
       echo "Unknown command: ${command}, or tag: ${tag}, nothing to do"
       ;;
