@@ -15,11 +15,11 @@
 #
 # Run this on server from which execute this:
 #
-#     $ echo run v2.14.0-RC1 | nc -q 0 10.1.20.115 8180
+#     $ echo run v2.14.0-RC1 | nc -q 0 10.1.20.115 8130
 #
 ##################################################################################################################
 
-PORT=8180
+PORT=8130
 SOCKET_PATH=/var/run/docker.sock
 STEP=1
 
