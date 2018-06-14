@@ -5,6 +5,6 @@
 ## Supported commands
 
 - run TAG
-- service-update SERVICE_NAME [IMAGE_AND_TAG]
+- service-update SERVICE_NAME IMAGE[:TAG]
 
-    If IMAGE_AND_TAG is not specified, used current one.
+    Both SERVICE_NAME and IMAGE must be specified. If TAG is not set, `latest` is used.

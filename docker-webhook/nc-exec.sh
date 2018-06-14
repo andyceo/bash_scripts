@@ -15,11 +15,12 @@
 #
 # Run this on server from which execute this:
 #
-#     $ echo run v2.14.0-RC1 | nc -q 0 10.1.20.115 8080
+#     $ echo run v2.14.0-RC1 | nc -q 0 10.1.20.115 8180
 #
 ##################################################################################################################
 
-PORT=8080
+PORT=8180
+SOCKET_PATH=/var/run/docker.sock
 STEP=1
 
 echo "Script started!"
@@ -45,7 +46,7 @@ while true ; do
 
   case "${command}" in
     "run")
-      tag=arg1
+      tag="${arg1}"
 
       echo "Re-run containers version $tag :"
 
@@ -67,15 +68,13 @@ while true ; do
       ;;
 
     "service-update")
-      service=arg1
-      image=arg2
-      # @todo use curl and socket: sudo curl --unix-socket /var/run/docker.sock http:/containers/json
-      # fix image is always exists...
-      if [ -n "$image" ]
-      then
-        echo docker service update ${service} --force --with-registry-auth --image=${image}
+      service="${arg1}"
+      image="${arg2}"
+      if [ -z "${service}" ] || [ -z "${image}" ]; then
+        echo "Wrong service-update command arguments! Service and image both must be set."
       else
-        echo docker service update ${service} --force --with-registry-auth
+        version=$(curl -s --unix-socket ${SOCKET_PATH} "http:/services/${service}" | grep -oP 'Version.*?Index.*?\d.*?},' | grep -oP '\d+')
+        curl --unix-socket ${SOCKET_PATH} -v -H 'Content-Type: application/json' -d ' { "name": "'"${service}"'", "TaskTemplate":{ "ContainerSpec": { "Image": "'"${image}"'", "Runtime": "container" } } }' "http:/services/${service}/update?version=${version}"
       fi
       ;;
     *)
