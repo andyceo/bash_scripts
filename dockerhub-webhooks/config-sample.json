@@ -1,0 +1,21 @@
+{
+  "stacks": {
+    "my-org/my-repo:latest": {
+      "stack": "explorer",
+      "filepath": "/path/to/explorer.yml"
+    },
+    "my-org/my-repo:latest": {
+      "stack": "explorer",
+      "filepath": "/path/to/explorer.yml"
+    }
+  },
+
+  "services": {
+    "my-org/my-repo:development": {
+      "service": "my-docker-service"
+    },
+    "my-org/my-other-repo:development": {
+      "service": "my-other-docker-service"
+    }
+  }
+}
