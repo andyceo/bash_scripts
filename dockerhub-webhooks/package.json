@@ -1,0 +1,12 @@
+{
+  "name": "dockerhub-webhooks",
+  "version": "0.1.0",
+  "description": "Docker Swarm stacks and services automated deployment triggered by Docker Hub webhooks",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "Andrey Andreev <andyceo@yandex.ru>",
+  "license": "MIT"
+}
