@@ -17,7 +17,9 @@ let server = new http.Server(function(req, res) {
         const payload = JSON.parse(jsonString)
         const image = `${payload.repository.repo_name}:${payload.push_data.tag}`
 
-        console.log(image)
+        console.log('Received:')
+        console.log(jsonString)
+        console.log('Image: ${image}')
 
         if (!services[image] && !stacks[image]) {
             console.log(`Received update for "${image}" but nor services nor stacks are configured to handle updates for this image.`)
