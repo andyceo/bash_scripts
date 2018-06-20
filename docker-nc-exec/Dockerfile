@@ -1,5 +1,5 @@
 FROM docker:stable
-MAINTAINER Andrey Andreev <andyceo@yandex.ru> (@andyceo)
+LABEL maintainer="Andrey Andreev <andyceo@yandex.ru> (@andyceo)"
 RUN apk add --update --no-cache curl grep netcat-openbsd && rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
 WORKDIR /app
 COPY nc-exec.sh /app
