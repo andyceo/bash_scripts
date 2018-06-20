@@ -19,7 +19,7 @@ let server = new http.Server(function(req, res) {
 
         console.log('Received:')
         console.log(jsonString)
-        console.log('Image: ${image}')
+        console.log(`Image: ${image}`)
 
         if (!services[image] && !stacks[image]) {
             console.log(`Received update for "${image}" but nor services nor stacks are configured to handle updates for this image.`)
@@ -39,7 +39,7 @@ let server = new http.Server(function(req, res) {
                     res.end('Internal Server Error\n')
                 }
                 else {
-                    console.log(`Deployed ${image} to stack ${stack} successfully and restarted the service.`)
+                    console.log(`Deployed ${image} to stack ${stack} successfully.`)
                     res.writeHead(200, {'content-type': 'text/plain'})
                     res.end('OK (stack)\n')
                 }
