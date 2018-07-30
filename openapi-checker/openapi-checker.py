@@ -5,20 +5,20 @@ import sys
 import json
 import yaml
 import requests
+from urllib.parse import urlparse
 from colors import color
 from jsonschema.exceptions import RefResolutionError
 from openapi_spec_validator import openapi_v3_spec_validator
 from openapi_spec_validator.handlers import UrlHandler
-from urllib.parse import urlparse, parse_qsl
 
 from openapi_core import create_spec
 from openapi_core.validators import RequestValidator, ResponseValidator
-from openapi_core.wrappers.base import BaseOpenAPIRequest, BaseOpenAPIResponse
-from werkzeug.datastructures import ImmutableMultiDict
+
+from classes import RequestsOpenAPIRequest, RequestsOpenAPIResponse
 
 
 def validate_specification(url):
-    """This function validates specification file (usually openapi.yaml)"""
+    """This function validates specification file (usually openapi.yaml) or url"""
 
     counter = 0
 
@@ -81,69 +81,9 @@ if __name__ == "__main__":
 
 
 
-class RequestsOpenAPIRequest(BaseOpenAPIRequest):
-    def __init__(self, request, path_pattern=None, path_params={}):
-        self.request = request
-        self.url = urlparse(request.url)
-        self._path_pattern = path_pattern
-        self._path_params = path_params
-
-    @property
-    def host_url(self):
-        return self.url.scheme + '://' + self.url.netloc
-
-    @property
-    def path(self):
-        return self.url.path
-
-    @property
-    def method(self):
-        return self.request.method.lower()
-
-    @property
-    def path_pattern(self):
-        if self._path_pattern is None:
-            return self.url.path
-
-        return self._path_pattern
-
-    @property
-    def parameters(self):
-        return {
-            'path': self._path_params,
-            'query': ImmutableMultiDict(parse_qsl(self.url.query)),
-            'headers': self.request.headers,
-            'cookies': self.request.cookies,
-        }
-
-    @property
-    def body(self):
-        return self.request.data
-
-    @property
-    def mimetype(self):
-        return self.request.headers.get('content-type')
 
 
-class RequestsOpenAPIResponse(BaseOpenAPIResponse):
-
-    def __init__(self, response):
-        self.response = response
-
-    @property
-    def data(self):
-        return self.response.text
-
-    @property
-    def status_code(self):
-        return self.response.status_code
-
-    @property
-    def mimetype(self):
-        return self.response.headers.get('content-type')
-
-
-def validate(openapi_file):
+def validate_requests_and_responses(openapi_file):
     with open(openapi_file, 'r') as myfile:
         spec_dict = yaml.safe_load(myfile)
         spec = create_spec(spec_dict)
@@ -232,4 +172,4 @@ if __name__ == "__main__":
         print("Specify path to openapi.yaml file!")
         exit(1)
     else:
-        validate(sys.argv[1])
+        validate_requests_and_responses(sys.argv[1])
