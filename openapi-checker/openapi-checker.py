@@ -52,37 +52,6 @@ def validate_specification(url):
             return 0
 
 
-def print_error(count, path, message, instance):
-    print()
-    print(color('Error #{:d} in [{}]:'.format(count, path or 'unknown'), style='bold'))
-    print("    {}".format(message))
-    print("    {}".format(instance))
-
-
-def help():
-    print('usage: ' + os.path.basename(__file__) + ' <spec_url_or_path>')
-
-
-def main(argv):
-    if len(argv) == 0:
-        print('Invalid usage!')
-        help()
-        sys.exit(2)
-
-    sys.exit(validate_specification(argv[0]))
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
-
-
-
-
-
-
-
-
-
 def validate_requests_and_responses(openapi_file):
     with open(openapi_file, 'r') as myfile:
         spec_dict = yaml.safe_load(myfile)
@@ -107,7 +76,6 @@ def validate_requests_and_responses(openapi_file):
 
         for path, path_object in spec.paths.items():
             for method, operation in path_object.operations.items():
-                print()
 
                 if '{' not in path:
                     print('{} {}'.format(method.upper(), path))
@@ -132,9 +100,11 @@ def validate_requests_and_responses(openapi_file):
                                                headers={'content-type': 'application/json'})
                     else:
                         print('Skipping, POST method has no example payload to test')
+                        print()
                         continue
                 else:
                     print('Skipping, no GET or POST methods for this path')
+                    print()
                     continue
 
                 openapi_request = RequestsOpenAPIRequest(req, path_pattern, path_params)
@@ -159,17 +129,41 @@ def validate_requests_and_responses(openapi_file):
                     print("Response body: {}".format(res.text))
                 else:
                     print(color(' [PASS] No errors found ', fg='white', bg='green', style='bold'))
+                print()
 
         if total_errors_count:
             print()
             print(color(' [FAIL] Total {:d} errors found '.format(total_errors_count), fg='white', bg='red',
                         style='bold'))
-            exit(total_errors_count)
+            return 1
+        else:
+            return 0
+
+
+def print_error(count, path, message, instance):
+    print()
+    print(color('Error #{:d} in [{}]:'.format(count, path or 'unknown'), style='bold'))
+    print("    {}".format(message))
+    print("    {}".format(instance))
+
+
+def help():
+    print('usage: ' + os.path.basename(__file__) + ' <spec_url_or_path>')
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
+        print('Invalid usage!')
         print("Specify path to openapi.yaml file!")
-        exit(1)
+        help()
+        exit(10)
     else:
-        validate_requests_and_responses(sys.argv[1])
+        print(color('Validating specification file...', style='bold', bg='cyan', fg='white'))
+        spec_errors_count = validate_specification(sys.argv[1])
+
+        print()
+        print()
+        print(color('Validating requests and responses...', style='bold', bg='cyan', fg='white'))
+        rr_errors_count = validate_requests_and_responses(sys.argv[1])
+
+        exit(spec_errors_count + rr_errors_count)
