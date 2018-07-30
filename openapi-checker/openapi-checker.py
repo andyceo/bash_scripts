@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""Check given OpenAPI specification and it's implementation requests and responses"""
+import argparse
 import os
 import sys
 import json
-import yaml
 import requests
 from urllib.parse import urlparse
 from colors import color
@@ -17,20 +18,37 @@ from openapi_core.validators import RequestValidator, ResponseValidator
 from classes import RequestsOpenAPIRequest, RequestsOpenAPIResponse
 
 
-def validate_specification(url):
+def load_spec(url):
+    """Return OpenAPI specification dictionary for given URL"""
+    handler = UrlHandler('http', 'https', 'file')
+    if not urlparse(url).scheme:
+        url = 'file://' + os.path.join(os.getcwd(), url)
+    return handler(url), url
+
+
+def load_parameters(url):
+    """Return dictionary with parameters values for given url to substitute when validate dynamic API requests"""
+    return {
+        'get': {
+            'count': 2,
+            'length': 123,
+            'blockHeight': 20,
+            'headerId': 'Ebo1riBazi8JpvmtqFnkbyhK29P8KXPawiTVyVFgAqhY',
+        },
+        'post': {
+            # '/blocks': None,
+            # '/transactions': None,
+            '/peers/connect': '127.0.0.1:5673',
+            # '/utils/hash/blake2b': '123qwe'
+        }
+    }
+
+
+def validate_specification(spec, spec_url):
     """This function validates specification file (usually openapi.yaml) or url"""
-
     counter = 0
-
     try:
-        handler = UrlHandler('http', 'https', 'file')
-
-        if not urlparse(url).scheme:
-            url = 'file://' + os.path.join(os.getcwd(), url)
-
-        spec = handler(url)
-
-        for i in openapi_v3_spec_validator.iter_errors(spec, spec_url=url):
+        for i in openapi_v3_spec_validator.iter_errors(spec, spec_url=spec_url):
             counter += 1
             print_error(counter, ':'.join(i.absolute_path), i.message, i.instance)
 
@@ -52,92 +70,74 @@ def validate_specification(url):
             return 0
 
 
-def validate_requests_and_responses(openapi_file):
-    with open(openapi_file, 'r') as myfile:
-        spec_dict = yaml.safe_load(myfile)
-        spec = create_spec(spec_dict)
-        server_url = 'http://127.0.0.1:8080'
-        total_errors_count = 0
+def validate_requests_and_responses(spec_dict, api_url, parameters):
+    spec = create_spec(spec_dict)
+    total_errors_count = 0
 
-        parameters = {
-            'get': {
-                'count': 2,
-                'length': 123,
-                'blockHeight': 20,
-                'headerId': 'Ebo1riBazi8JpvmtqFnkbyhK29P8KXPawiTVyVFgAqhY',
-            },
-            'post': {
-                # '/blocks': None,
-                # '/transactions': None,
-                '/peers/connect': '127.0.0.1:5673',
-                # '/utils/hash/blake2b': '123qwe'
-            }
-        }
+    for path, path_object in spec.paths.items():
+        for method, operation in path_object.operations.items():
 
-        for path, path_object in spec.paths.items():
-            for method, operation in path_object.operations.items():
+            if '{' not in path:
+                print('{} {}'.format(method.upper(), path))
+                new_path = path
+                path_pattern = None
+                path_params = {}
+            else:
+                parameter_start = path.find('{')
+                parameter_end = path.find('}')
+                parameter = path[parameter_start + 1:parameter_end]
+                new_path = path[:parameter_start] + str(parameters['get'][parameter]) + path[parameter_end + 1:]
+                print('{} {} -> {}'.format(method.upper(), path, new_path))
+                path_pattern = path
+                path_params = {parameter: parameters['get'][parameter]}
 
-                if '{' not in path:
-                    print('{} {}'.format(method.upper(), path))
-                    new_path = path
-                    path_pattern = None
-                    path_params = {}
+            if method == 'get':
+                req = requests.Request('GET', api_url + new_path)
+            elif method == 'post':
+                if new_path in parameters['post'] and parameters['post'][new_path]:
+                    req = requests.Request('POST', api_url + new_path,
+                                           data=json.dumps(parameters['post'][new_path]),
+                                           headers={'content-type': 'application/json'})
                 else:
-                    parameter_start = path.find('{')
-                    parameter_end = path.find('}')
-                    parameter = path[parameter_start + 1:parameter_end]
-                    new_path = path[:parameter_start] + str(parameters['get'][parameter]) + path[parameter_end + 1:]
-                    print('{} {} -> {}'.format(method.upper(), path, new_path))
-                    path_pattern = path
-                    path_params = {parameter: parameters['get'][parameter]}
-
-                if method == 'get':
-                    req = requests.Request('GET', server_url + new_path)
-                elif method == 'post':
-                    if new_path in parameters['post'] and parameters['post'][new_path]:
-                        req = requests.Request('POST', server_url + new_path,
-                                               data=json.dumps(parameters['post'][new_path]),
-                                               headers={'content-type': 'application/json'})
-                    else:
-                        print('Skipping, POST method has no example payload to test')
-                        print()
-                        continue
-                else:
-                    print('Skipping, no GET or POST methods for this path')
+                    print('Skipping, POST method has no example payload to test')
                     print()
                     continue
-
-                openapi_request = RequestsOpenAPIRequest(req, path_pattern, path_params)
-                validator = RequestValidator(spec)
-                result = validator.validate(openapi_request)
-                request_errors = result.errors
-
-                r = req.prepare()
-                s = requests.Session()
-                res = s.send(r)
-
-                openapi_response = RequestsOpenAPIResponse(res)
-                validator = ResponseValidator(spec)
-                result = validator.validate(openapi_request, openapi_response)
-                response_errors = result.errors
-
-                print('Request errors: {} Response errors: {}'.format(request_errors, response_errors))
-                if request_errors or response_errors:
-                    errors_count = len(request_errors) + len(response_errors)
-                    total_errors_count += errors_count
-                    print(color(' [FAIL] {:d} errors found '.format(errors_count), fg='white', bg='red', style='bold'))
-                    print("Response body: {}".format(res.text))
-                else:
-                    print(color(' [PASS] No errors found ', fg='white', bg='green', style='bold'))
+            else:
+                print('Skipping, no GET or POST methods for this path')
                 print()
+                continue
 
-        if total_errors_count:
+            openapi_request = RequestsOpenAPIRequest(req, path_pattern, path_params)
+            validator = RequestValidator(spec)
+            result = validator.validate(openapi_request)
+            request_errors = result.errors
+
+            r = req.prepare()
+            s = requests.Session()
+            res = s.send(r)
+
+            openapi_response = RequestsOpenAPIResponse(res)
+            validator = ResponseValidator(spec)
+            result = validator.validate(openapi_request, openapi_response)
+            response_errors = result.errors
+
+            print('Request errors: {} Response errors: {}'.format(request_errors, response_errors))
+            if request_errors or response_errors:
+                errors_count = len(request_errors) + len(response_errors)
+                total_errors_count += errors_count
+                print(color(' [FAIL] {:d} errors found '.format(errors_count), fg='white', bg='red', style='bold'))
+                print("Response body: {}".format(res.text))
+            else:
+                print(color(' [PASS] No errors found ', fg='white', bg='green', style='bold'))
             print()
-            print(color(' [FAIL] Total {:d} errors found '.format(total_errors_count), fg='white', bg='red',
-                        style='bold'))
-            return 1
-        else:
-            return 0
+
+    if total_errors_count:
+        print()
+        print(color(' [FAIL] Total {:d} errors found '.format(total_errors_count), fg='white', bg='red',
+                    style='bold'))
+        return 1
+    else:
+        return 0
 
 
 def print_error(count, path, message, instance):
@@ -147,23 +147,30 @@ def print_error(count, path, message, instance):
     print("    {}".format(instance))
 
 
-def help():
-    print('usage: ' + os.path.basename(__file__) + ' <spec_url_or_path>')
-
-
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print('Invalid usage!')
-        print("Specify path to openapi.yaml file!")
-        help()
-        exit(10)
-    else:
+    parser = argparse.ArgumentParser(description='Check OpenAPI specification and check API requests and responses are '
+                                                 'fits with it')
+
+    parser.add_argument('openapi_specification_url', metavar='SPEC_FILE_OR_URL', type=str, default='',
+                        help='OpenAPI specification filename or URL, for example, openapi.yaml or '
+                             'https://raw.githubusercontent.com/OAI/OpenAPI-Specification/'
+                             'master/examples/v3.0/petstore.yaml')
+    parser.add_argument('--api', metavar='http://127.0.0.1:8080', help='Implemented API url')
+    parser.add_argument('--parameters', metavar='parameters.json', help='Parameters values for substitution')
+    args = parser.parse_args()
+
+    spec_errors_count = rr_errors_count = 0
+
+    if args.openapi_specification_url:
         print(color('Validating specification file...', style='bold', bg='cyan', fg='white'))
-        spec_errors_count = validate_specification(sys.argv[1])
+        spec, url = load_spec(args.openapi_specification_url)
+        spec_errors_count = validate_specification(spec, url)
 
-        print()
-        print()
-        print(color('Validating requests and responses...', style='bold', bg='cyan', fg='white'))
-        rr_errors_count = validate_requests_and_responses(sys.argv[1])
+        if args.api:
+            print()
+            print()
+            print(color('Validating requests and responses...', style='bold', bg='cyan', fg='white'))
+            parameters = load_parameters(args.parameters)
+            rr_errors_count = validate_requests_and_responses(spec, args.api, parameters)
 
-        exit(spec_errors_count + rr_errors_count)
+    exit(spec_errors_count + rr_errors_count)
