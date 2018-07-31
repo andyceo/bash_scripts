@@ -2,3 +2,4 @@ ansicolors
 requests
 openapi-core
 openapi-spec-validator
+werkzeug
