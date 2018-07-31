@@ -5,11 +5,11 @@ from werkzeug.datastructures import ImmutableMultiDict
 
 
 class RequestsOpenAPIRequest(BaseOpenAPIRequest):
-    def __init__(self, request, path_pattern=None, path_params={}):
+    def __init__(self, request, path_pattern=None, path_params=None):
         self.request = request
         self.url = urlparse(request.url)
         self._path_pattern = path_pattern
-        self._path_params = path_params
+        self._path_params = {} if path_params is None else path_params
 
     @property
     def host_url(self):
