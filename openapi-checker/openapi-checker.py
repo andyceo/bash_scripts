@@ -218,7 +218,7 @@ if __name__ == "__main__":
                         help='OpenAPI specification filename or URL, for example, openapi.yaml or '
                              'https://raw.githubusercontent.com/OAI/OpenAPI-Specification/'
                              'master/examples/v3.0/petstore.yaml')
-    parser.add_argument('--api', metavar='http://127.0.0.1:8080', help='Implemented API url')
+    parser.add_argument('--api', metavar='http://127.0.0.1:8080', help='Implemented API URL')
     parser.add_argument('--parameters', metavar='parameters.json', help='Parameters values for substitution')
     args = parser.parse_args()
 

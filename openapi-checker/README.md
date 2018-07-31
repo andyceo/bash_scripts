@@ -3,7 +3,7 @@ This project aimed to validate OpenAPI 3+ specification file and also check and 
 
 ## Installation and usage
 
-##@ Usage on raw system
+### Usage on raw system
 
 You should have Python 3 and `pip` utility installed on your system.
 
