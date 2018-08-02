@@ -33,3 +33,10 @@ Check specification integrity only, specification located on URL:
 Check specification integrity (local file) and requests and responses of implemented API (URL):
 
     sudo docker run --rm -v /path/to/openapi.yaml:/app/openapi.yaml andyceo/openapi-checker openapi.yaml --api http://127.0.0.1:81
+
+Check specification integrity (local file) and requests and responses of an implemented API (URL), substitute parameters in specification with values given in `parameters.yml` local file:
+
+    sudo docker run --rm \
+        -v /path/to/openapi.yaml:/app/openapi.yaml \
+        -v /path/to/parameters.yaml:/app/parameters.yaml \
+        andyceo/openapi-checker openapi.yaml --api http://127.0.0.1:81 --parameters parameters.yaml

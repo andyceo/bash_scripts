@@ -4,8 +4,10 @@
 import argparse
 import json
 import os
+import re
 import sys
 from urllib.parse import urlparse, parse_qsl
+import yaml
 
 import requests
 from colors import color
@@ -89,22 +91,10 @@ def load_spec(url):
     return handler(url), url
 
 
-def load_parameters(url):
-    """Return dictionary with parameters values for given url to substitute when validate dynamic API requests"""
-    return {
-        'get': {
-            'count': 2,
-            'length': 123,
-            'blockHeight': 20,
-            'headerId': 'Ebo1riBazi8JpvmtqFnkbyhK29P8KXPawiTVyVFgAqhY',
-        },
-        'post': {
-            # '/blocks': None,
-            # '/transactions': None,
-            '/peers/connect': '127.0.0.1:5673',
-            # '/utils/hash/blake2b': '123qwe'
-        }
-    }
+def load_parameters(filepath):
+    """Return dictionary with parameters values for given filepath to substitute when validate dynamic API requests"""
+    with open(filepath, 'r') as f:
+        return yaml.safe_load(f)
 
 
 def validate_specification(spec, spec_url):
@@ -139,27 +129,31 @@ def validate_requests_and_responses(spec_dict, api_url, parameters):
 
     for path, path_object in spec.paths.items():
         for method, operation in path_object.operations.items():
+            new_path = path
+            path_pattern = None
+            path_params = {}
 
-            if '{' not in path:
-                print('{} {}'.format(method.upper(), path))
-                new_path = path
-                path_pattern = None
-                path_params = {}
+            match = re.search('{(.+?)}', path)
+            if match:
+                # Path with parameters
+                for parameter in match.groups():
+                    if path in parameters['paths'] and 'get' in parameters['paths'][path] \
+                            and parameter in parameters['paths'][path]['get']:
+                        new_path = new_path.replace('{' + parameter + '}',
+                                                    str(parameters['paths'][path]['get'][parameter]))
+                    print('{} {} -> {}'.format(method.upper(), path, new_path))
+                    path_pattern = path
+                    path_params = {parameter: parameters['paths'][path]['get'][parameter]}
             else:
-                parameter_start = path.find('{')
-                parameter_end = path.find('}')
-                parameter = path[parameter_start + 1:parameter_end]
-                new_path = path[:parameter_start] + str(parameters['get'][parameter]) + path[parameter_end + 1:]
-                print('{} {} -> {}'.format(method.upper(), path, new_path))
-                path_pattern = path
-                path_params = {parameter: parameters['get'][parameter]}
+                # Path without parameters
+                print('{} {}'.format(method.upper(), path))
 
             if method == 'get':
                 req = requests.Request('GET', api_url + new_path)
             elif method == 'post':
-                if new_path in parameters['post'] and parameters['post'][new_path]:
+                if path in parameters['paths'] and 'post' in parameters['paths'][path]:
                     req = requests.Request('POST', api_url + new_path,
-                                           data=json.dumps(parameters['post'][new_path]),
+                                           data=json.dumps(parameters['paths'][path]['post']),
                                            headers={'content-type': 'application/json'})
                 else:
                     print('Skipping, POST method has no example payload to test')

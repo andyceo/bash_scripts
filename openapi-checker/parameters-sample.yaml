@@ -1,0 +1,9 @@
+paths:
+
+  /blocks/lastHeaders/{count}/{offset}:
+    get:
+      count: 1
+      offset: 4
+
+  /utils/hash/blake2b:
+    post: 123qwe
