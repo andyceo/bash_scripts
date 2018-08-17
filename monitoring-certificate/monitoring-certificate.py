@@ -43,7 +43,7 @@ def save_to_influxdb(timestamp, domain, age_file_check: bool, age_cert_check: bo
         }]
         client = influxdb.InfluxDBClient(args.influxdb_host, args.influxdb_port, args.influxdb_user,
                                          influxdb_password, args.influxdb_database)
-        client.write_points(json_body)
+        client.write_points(json_body, time_precision='s')
         utils.message('Domain {}, file age check: {}, cert age_check: {}, check result {} was saved to InfluxDB on '
                       'timestamp {}'.format(domain, age_file_check, age_cert_check, check_result, timestamp))
     except BaseException:
