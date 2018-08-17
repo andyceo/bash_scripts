@@ -7,6 +7,7 @@ import argparse
 import os
 import sys
 import time
+from influxdb.exceptions import InfluxDBClientError, InfluxDBServerError
 
 SEC_IN_DAY = 60 * 60 * 24  # number of seconds in a day
 MAX_CERT_AGE = 90  # maximum certificate age in days
@@ -43,10 +44,10 @@ def save_to_influxdb(timestamp, domain, age_file_check: bool, age_cert_check: bo
         }]
         client = influxdb.InfluxDBClient(args.influxdb_host, args.influxdb_port, args.influxdb_user,
                                          influxdb_password, args.influxdb_database)
-        client.write_points(json_body, time_precision='s')
+        client.write_points(json_body)
         utils.message('Domain {}, file age check: {}, cert age_check: {}, check result {} was saved to InfluxDB on '
                       'timestamp {}'.format(domain, age_file_check, age_cert_check, check_result, timestamp))
-    except BaseException:
+    except (InfluxDBClientError, InfluxDBServerError):
         utils.message('Error saving domain {}, file age check: {}, cert age_check: {}, check result {} to InfluxDB on '
                       'timestamp {}!'.format(domain, age_file_check, age_cert_check, check_result, timestamp))
 
