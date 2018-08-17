@@ -21,13 +21,15 @@ def check_certbot_dir(d, save_to_influxdb_flag: bool):
             st_mtime = entry.stat().st_mtime
             age_file_check = t - st_mtime < file_threshold
             cert_expiration_timestamp = utils.get_cert_expiration_timestamp(entry.name)
-            age_cert_check = cert_expiration_timestamp - t > THRESHOLD
+            seconds_before_expiration = cert_expiration_timestamp - t
+            age_cert_check = seconds_before_expiration > THRESHOLD * SEC_IN_DAY
             fields = {
                 "age_file_check": age_file_check,
                 "age_cert_check": age_cert_check,
                 "check_result": age_file_check and age_cert_check,
                 "st_mtime": st_mtime,
                 "cert_expiration_timestamp": cert_expiration_timestamp,
+                "seconds_before_expiration": round(seconds_before_expiration),
                 "max_cert_age_days": MAX_CERT_AGE,
                 "threshold_days": THRESHOLD
             }
