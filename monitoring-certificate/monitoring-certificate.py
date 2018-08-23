@@ -19,7 +19,13 @@ def check_certbot_dir(d, save_to_influxdb_flag: bool):
         if not entry.name.startswith('.') and entry.is_dir():
             st_mtime = entry.stat().st_mtime
             age_file_check = t - st_mtime < SEC_IN_DAY * (MAX_CERT_AGE - THRESHOLD)
-            cert_expiration_timestamp = utils.get_cert_expiration_timestamp(entry.name)
+
+            try:
+                cert_expiration_timestamp = utils.get_cert_expiration_timestamp(entry.name)
+            except BaseException as err:
+                print('Exception while checking certificate expiration date for domain {}! ({})'.
+                      format(entry.name, err))
+
             seconds_before_expiration = cert_expiration_timestamp - t
             age_cert_check = seconds_before_expiration > THRESHOLD * SEC_IN_DAY
             fields = {
