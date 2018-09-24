@@ -18,7 +18,7 @@ from openapi_spec_validator import openapi_v3_spec_validator
 from openapi_spec_validator.handlers import UrlHandler
 
 from openapi_core import create_spec
-from openapi_core.validators import RequestValidator, ResponseValidator
+from openapi_core.shortcuts import RequestValidator, ResponseValidator
 from openapi_core.wrappers.base import BaseOpenAPIRequest, BaseOpenAPIResponse
 
 
@@ -123,7 +123,8 @@ def validate_specification(spec, spec_url):
             return 0
 
 
-def validate_requests_and_responses(spec_dict, api_url, parameters):
+def validate_requests_and_responses(spec_dict, api_url, parameters=None):
+    parameters = parameters if parameters else {'paths': {}}
     spec = create_spec(spec_dict)
     total_errors_count = 0
 
@@ -133,20 +134,29 @@ def validate_requests_and_responses(spec_dict, api_url, parameters):
             path_pattern = None
             path_params = {}
 
+            print('{} {}'.format(method.upper(), path))
+
             match = re.search('{(.+?)}', path)
             if match:
-                # Path with parameters
+                # Path has parameters in URL (GET parameters), calculate them first or skip path from testing
+                missing_payloads = []
                 for parameter in match.groups():
                     if path in parameters['paths'] and 'get' in parameters['paths'][path] \
                             and parameter in parameters['paths'][path]['get']:
                         new_path = new_path.replace('{' + parameter + '}',
                                                     str(parameters['paths'][path]['get'][parameter]))
-                    print('{} {} -> {}'.format(method.upper(), path, new_path))
-                    path_pattern = path
-                    path_params = {parameter: parameters['paths'][path]['get'][parameter]}
-            else:
-                # Path without parameters
-                print('{} {}'.format(method.upper(), path))
+                    else:
+                        print('Parameter {} is absent in example payload'.format(parameter))
+                        missing_payloads.append(parameter)
+
+                if missing_payloads:
+                    print('Skipping, this path has parameters in URL but no example payloads to substitute them')
+                    print()
+                    continue
+
+                print('Path transformed to: {}'.format(new_path))
+                path_pattern = path
+                path_params = {parameter: parameters['paths'][path]['get'][parameter]}
 
             if method == 'get':
                 req = requests.Request('GET', api_url + new_path)
@@ -213,7 +223,7 @@ if __name__ == "__main__":
                              'https://raw.githubusercontent.com/OAI/OpenAPI-Specification/'
                              'master/examples/v3.0/petstore.yaml')
     parser.add_argument('--api', metavar='http://127.0.0.1:8080', help='Implemented API URL')
-    parser.add_argument('--parameters', metavar='parameters.json', help='Parameters values for substitution')
+    parser.add_argument('--parameters', metavar='parameters.yml', help='Parameters values for substitution')
     args = parser.parse_args()
 
     spec_errors_count = rr_errors_count = 0
@@ -227,7 +237,7 @@ if __name__ == "__main__":
             print()
             print()
             print(color('Validating requests and responses...', style='bold', bg='cyan', fg='white'))
-            parameters = load_parameters(args.parameters)
+            parameters = load_parameters(args.parameters) if args.parameters else None
             rr_errors_count = validate_requests_and_responses(spec, args.api, parameters)
 
     exit(spec_errors_count + rr_errors_count)
