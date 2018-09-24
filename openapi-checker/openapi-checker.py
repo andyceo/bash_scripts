@@ -134,20 +134,29 @@ def validate_requests_and_responses(spec_dict, api_url, parameters=None):
             path_pattern = None
             path_params = {}
 
+            print('{} {}'.format(method.upper(), path))
+
             match = re.search('{(.+?)}', path)
             if match:
-                # Path with parameters
+                # Path has parameters in URL (GET parameters), calculate them first or skip path from testing
+                missing_payloads = []
                 for parameter in match.groups():
                     if path in parameters['paths'] and 'get' in parameters['paths'][path] \
                             and parameter in parameters['paths'][path]['get']:
                         new_path = new_path.replace('{' + parameter + '}',
                                                     str(parameters['paths'][path]['get'][parameter]))
-                    print('{} {} -> {}'.format(method.upper(), path, new_path))
-                    path_pattern = path
-                    path_params = {parameter: parameters['paths'][path]['get'][parameter]}
-            else:
-                # Path without parameters
-                print('{} {}'.format(method.upper(), path))
+                    else:
+                        print('Parameter {} is absent in example payload'.format(parameter))
+                        missing_payloads.append(parameter)
+
+                if missing_payloads:
+                    print('Skipping, this path has parameters in URL but no example payloads to substitute them')
+                    print()
+                    continue
+
+                print('Path transformed to: {}'.format(new_path))
+                path_pattern = path
+                path_params = {parameter: parameters['paths'][path]['get'][parameter]}
 
             if method == 'get':
                 req = requests.Request('GET', api_url + new_path)
