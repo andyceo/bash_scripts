@@ -123,7 +123,8 @@ def validate_specification(spec, spec_url):
             return 0
 
 
-def validate_requests_and_responses(spec_dict, api_url, parameters):
+def validate_requests_and_responses(spec_dict, api_url, parameters=None):
+    parameters = parameters if parameters else {}
     spec = create_spec(spec_dict)
     total_errors_count = 0
 
@@ -213,7 +214,7 @@ if __name__ == "__main__":
                              'https://raw.githubusercontent.com/OAI/OpenAPI-Specification/'
                              'master/examples/v3.0/petstore.yaml')
     parser.add_argument('--api', metavar='http://127.0.0.1:8080', help='Implemented API URL')
-    parser.add_argument('--parameters', metavar='parameters.json', help='Parameters values for substitution')
+    parser.add_argument('--parameters', metavar='parameters.yml', help='Parameters values for substitution')
     args = parser.parse_args()
 
     spec_errors_count = rr_errors_count = 0
@@ -227,7 +228,7 @@ if __name__ == "__main__":
             print()
             print()
             print(color('Validating requests and responses...', style='bold', bg='cyan', fg='white'))
-            parameters = load_parameters(args.parameters)
+            parameters = load_parameters(args.parameters) if args.parameters else {}
             rr_errors_count = validate_requests_and_responses(spec, args.api, parameters)
 
     exit(spec_errors_count + rr_errors_count)
