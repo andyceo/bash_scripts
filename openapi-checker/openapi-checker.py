@@ -18,7 +18,7 @@ from openapi_spec_validator import openapi_v3_spec_validator
 from openapi_spec_validator.handlers import UrlHandler
 
 from openapi_core import create_spec
-from openapi_core.validators import RequestValidator, ResponseValidator
+from openapi_core.shortcuts import RequestValidator, ResponseValidator
 from openapi_core.wrappers.base import BaseOpenAPIRequest, BaseOpenAPIResponse
 
 
