@@ -124,7 +124,7 @@ def validate_specification(spec, spec_url):
 
 
 def validate_requests_and_responses(spec_dict, api_url, parameters=None):
-    parameters = parameters if parameters else {}
+    parameters = parameters if parameters else {'paths': {}}
     spec = create_spec(spec_dict)
     total_errors_count = 0
 
@@ -228,7 +228,7 @@ if __name__ == "__main__":
             print()
             print()
             print(color('Validating requests and responses...', style='bold', bg='cyan', fg='white'))
-            parameters = load_parameters(args.parameters) if args.parameters else {}
+            parameters = load_parameters(args.parameters) if args.parameters else None
             rr_errors_count = validate_requests_and_responses(spec, args.api, parameters)
 
     exit(spec_errors_count + rr_errors_count)
