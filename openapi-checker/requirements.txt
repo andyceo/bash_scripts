@@ -1,5 +1,5 @@
 ansicolors
 requests
-openapi-core
+openapi-core==0.5.0
 openapi-spec-validator
 werkzeug
