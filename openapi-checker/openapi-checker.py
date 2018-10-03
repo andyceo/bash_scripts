@@ -123,6 +123,61 @@ def validate_specification(spec, spec_url):
             return 0
 
 
+def path_parameter_substitute(path, parameters):
+    """This generator return path with substituted path parameters and continue to return such pathes for given path
+    until parameters for substitution run out"""
+    match = re.search('{(.+?)}', path)
+    if match:
+        if path in parameters['paths'] and 'path_parameters' in parameters['paths'][path]:
+            # Path has path parameters (templates), calculate them first or skip path from testing
+            for params_json_string in parameters['paths'][path]['path_parameters']:
+                params = json.loads(params_json_string)
+                for parameter in match.groups():
+                    missing_parameters = []
+                    real_path = path
+                    if parameter in params:
+                        real_path = real_path.replace('{' + parameter + '}', str(params[parameter]))
+                    else:
+                        missing_parameters.append(parameter)
+                        print('Path parameter {} does not exists in given parameters to substitute!'.format(parameter))
+                if missing_parameters:
+                    print('Skipping, this path has {} unspecified path parameters (templates) in URL'
+                          .format(len(missing_parameters)))
+                    print()
+                    continue
+                yield real_path, path, {parameter: params[parameter]}
+    else:
+        yield path, path, {}
+
+
+def validate_request(req, path_pattern, path_params, spec, url):
+    print('Validating URL: {}'.format(url))
+    openapi_request = RequestsOpenAPIRequest(req, path_pattern, path_params)
+    validator = RequestValidator(spec)
+    result = validator.validate(openapi_request)
+    request_errors = result.errors
+
+    r = req.prepare()
+    s = requests.Session()
+    res = s.send(r)
+
+    openapi_response = RequestsOpenAPIResponse(res)
+    validator = ResponseValidator(spec)
+    result = validator.validate(openapi_request, openapi_response)
+    response_errors = result.errors
+
+    print('Request errors: {} Response errors: {}'.format(request_errors, response_errors))
+    if request_errors or response_errors:
+        errors_count = len(request_errors) + len(response_errors)
+        print(color(' [FAIL] {:d} errors found '.format(errors_count), fg='white', bg='red', style='bold'))
+        print("Response body: {}".format(res.text))
+    else:
+        errors_count = 0
+        print(color(' [PASS] No errors found ', fg='white', bg='green', style='bold'))
+    print()
+    return errors_count
+
+
 def validate_requests_and_responses(spec_dict, api_url, parameters=None):
     parameters = parameters if parameters else {'paths': {}}
     spec = create_spec(spec_dict)
@@ -130,73 +185,33 @@ def validate_requests_and_responses(spec_dict, api_url, parameters=None):
 
     for path, path_object in spec.paths.items():
         for method, operation in path_object.operations.items():
-            real_path = path
-            path_pattern = None
-            path_params = {}
-
             print('{} {}'.format(method.upper(), path))
-
-            match = re.search('{(.+?)}', path)
-            if match:
-                # Path has parameters in URL (GET parameters), calculate them first or skip path from testing
-                missing_payloads = []
-                for parameter in match.groups():
-                    if path in parameters['paths'] and 'get' in parameters['paths'][path] \
-                            and parameter in parameters['paths'][path]['get']:
-                        real_path = real_path.replace('{' + parameter + '}',
-                                                      str(parameters['paths'][path]['get'][parameter]))
+            for real_path, path_pattern, path_params in path_parameter_substitute(path, parameters):
+                if method == 'get':
+                    if path in parameters['paths'] and 'get' in parameters['paths'][path]:
+                        for params_json_string in parameters['paths'][path]['get']:
+                            url = api_url + real_path
+                            req = requests.Request('GET', url, params=json.loads(params_json_string))
+                            total_errors_count += validate_request(req, path_pattern, path_params, spec, url)
                     else:
-                        print('Parameter {} is absent in example payload'.format(parameter))
-                        missing_payloads.append(parameter)
-
-                if missing_payloads:
-                    print('Skipping, this path has parameters in URL but no example payloads to substitute them')
-                    print()
-                    continue
-
-                print('Path transformed to: {}'.format(real_path))
-                path_pattern = path
-                path_params = {parameter: parameters['paths'][path]['get'][parameter]}
-
-            if method == 'get':
-                req = requests.Request('GET', api_url + real_path)
-            elif method == 'post':
-                if path in parameters['paths'] and 'post' in parameters['paths'][path]:
-                    req = requests.Request('POST', api_url + real_path,
-                                           data=json.dumps(parameters['paths'][path]['post']),
-                                           headers={'content-type': 'application/json'})
+                        url = api_url + real_path
+                        req = requests.Request('GET', url)
+                        total_errors_count += validate_request(req, path_pattern, path_params, spec, url)
+                elif method == 'post':
+                    if path in parameters['paths'] and 'post' in parameters['paths'][path]:
+                        for params_json_string in parameters['paths'][path]['post']:
+                            url = api_url + real_path
+                            req = requests.Request('POST', url, data=params_json_string.strip(),
+                                                   headers={'content-type': 'application/json'})
+                            total_errors_count += validate_request(req, path_pattern, path_params, spec, url)
+                    else:
+                        print('Skipping, POST method has no example payload to test')
+                        print()
+                        continue
                 else:
-                    print('Skipping, POST method has no example payload to test')
+                    print('Skipping, no GET or POST methods defined for this path')
                     print()
                     continue
-            else:
-                print('Skipping, no GET or POST methods for this path')
-                print()
-                continue
-
-            openapi_request = RequestsOpenAPIRequest(req, path_pattern, path_params)
-            validator = RequestValidator(spec)
-            result = validator.validate(openapi_request)
-            request_errors = result.errors
-
-            r = req.prepare()
-            s = requests.Session()
-            res = s.send(r)
-
-            openapi_response = RequestsOpenAPIResponse(res)
-            validator = ResponseValidator(spec)
-            result = validator.validate(openapi_request, openapi_response)
-            response_errors = result.errors
-
-            print('Request errors: {} Response errors: {}'.format(request_errors, response_errors))
-            if request_errors or response_errors:
-                errors_count = len(request_errors) + len(response_errors)
-                total_errors_count += errors_count
-                print(color(' [FAIL] {:d} errors found '.format(errors_count), fg='white', bg='red', style='bold'))
-                print("Response body: {}".format(res.text))
-            else:
-                print(color(' [PASS] No errors found ', fg='white', bg='green', style='bold'))
-            print()
 
     if total_errors_count:
         print()
@@ -237,7 +252,7 @@ if __name__ == "__main__":
             print()
             print()
             print(color('Validating requests and responses...', style='bold', bg='cyan', fg='white'))
-            parameters = load_parameters(args.parameters) if args.parameters else None
-            rr_errors_count = validate_requests_and_responses(spec, args.api, parameters)
+            params = load_parameters(args.parameters) if args.parameters else None
+            rr_errors_count = validate_requests_and_responses(spec, args.api, params)
 
     exit(spec_errors_count + rr_errors_count)
