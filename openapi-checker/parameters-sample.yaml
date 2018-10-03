@@ -1,9 +1,48 @@
+# This file consists of pathes, placed under the root `paths` key.
+#
+# Each path can have 3 subkeys (must contain at least one):
+#
+#   - path_parameters: to set route path templating parameters (the path part in {curly} brackets)
+#   - get: get parameters that goes after `?` in url, corresponded to OpenAPI path.get.parameters
+#   - post: request bodies to be sended to API endpoint, corresponded to OpenAPI path.post.requestBody
+#
+# Every subkey is a list of strings, each string should be a correct JSON string.
+
 paths:
 
-  /blocks/lastHeaders/{count}/{offset}:
+  /utils/seed/{length}:
+
+    path_parameters:
+      - |
+          {"length": 123}
+
     get:
-      count: 1
-      offset: 4
+      - |
+          {"offset": 0}
+
+      - |
+          {"offset": 1}
+
+      - |
+          {"offset": 20}
+
+  /blocks/lastHeaders/{count}/{offset}:
+    path_parameters:
+      - |
+          {
+              "count": 1,
+              "offset": 4
+          }
+
+      - |
+          {
+              "count": 0,
+              "offset": 3
+          }
+
+      - |
+        {"count": 2,"offset": 0}
 
   /utils/hash/blake2b:
-    post: 123qwe
+    post:
+      - '"123qwe"'
