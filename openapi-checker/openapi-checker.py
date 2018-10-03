@@ -130,7 +130,7 @@ def validate_requests_and_responses(spec_dict, api_url, parameters=None):
 
     for path, path_object in spec.paths.items():
         for method, operation in path_object.operations.items():
-            new_path = path
+            real_path = path
             path_pattern = None
             path_params = {}
 
@@ -143,8 +143,8 @@ def validate_requests_and_responses(spec_dict, api_url, parameters=None):
                 for parameter in match.groups():
                     if path in parameters['paths'] and 'get' in parameters['paths'][path] \
                             and parameter in parameters['paths'][path]['get']:
-                        new_path = new_path.replace('{' + parameter + '}',
-                                                    str(parameters['paths'][path]['get'][parameter]))
+                        real_path = real_path.replace('{' + parameter + '}',
+                                                      str(parameters['paths'][path]['get'][parameter]))
                     else:
                         print('Parameter {} is absent in example payload'.format(parameter))
                         missing_payloads.append(parameter)
@@ -154,15 +154,15 @@ def validate_requests_and_responses(spec_dict, api_url, parameters=None):
                     print()
                     continue
 
-                print('Path transformed to: {}'.format(new_path))
+                print('Path transformed to: {}'.format(real_path))
                 path_pattern = path
                 path_params = {parameter: parameters['paths'][path]['get'][parameter]}
 
             if method == 'get':
-                req = requests.Request('GET', api_url + new_path)
+                req = requests.Request('GET', api_url + real_path)
             elif method == 'post':
                 if path in parameters['paths'] and 'post' in parameters['paths'][path]:
-                    req = requests.Request('POST', api_url + new_path,
+                    req = requests.Request('POST', api_url + real_path,
                                            data=json.dumps(parameters['paths'][path]['post']),
                                            headers={'content-type': 'application/json'})
                 else:
