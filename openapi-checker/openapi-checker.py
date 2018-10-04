@@ -125,6 +125,11 @@ def validate_specification(spec, spec_url):
 def path_parameter_substitute(path, parameters):
     """This generator return path with substituted path parameters and continue to return such pathes for given path
     until parameters for substitution run out"""
+
+    if path in parameters['paths'] and 'skip' in parameters['paths'][path] and parameters['paths'][path]:
+        print("Skipping, this path is set to skip tests")
+        return None
+
     match = re.search('{(.+?)}', path)
     if match:
         if path in parameters['paths'] and 'path_parameters' in parameters['paths'][path]:
@@ -142,7 +147,7 @@ def path_parameter_substitute(path, parameters):
                         real_path = real_path.replace('{' + parameter + '}', str(params[parameter]))
                     else:
                         missing_parameters.append(parameter)
-                        print('Path parameter {} does not exists in given parameters to substitute!'.format(parameter))
+                        print('Path parameter {} does not exists in given parameters to substitute'.format(parameter))
 
                 if missing_parameters:
                     print('Skipping, this path has {} unspecified path parameters (templates) in URL'
@@ -151,6 +156,10 @@ def path_parameter_substitute(path, parameters):
                     continue
 
                 yield real_path, path, {parameter: params[parameter]}
+
+        else:
+            print('Skipping, path has no path parameters example payload to substitute')
+            print()
 
     else:
         yield path, path, {}
