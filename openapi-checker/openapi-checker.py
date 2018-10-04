@@ -134,7 +134,7 @@ def path_parameter_substitute(path, parameters):
     """This generator return path with substituted path parameters and continue to return such pathes for given path
     until parameters for substitution run out"""
 
-    if path in parameters['paths'] and 'skip' in parameters['paths'][path] and parameters['paths'][path]:
+    if path in parameters['paths'] and 'skip' in parameters['paths'][path] and parameters['paths'][path]['skip']:
         skip("This path is set to skip tests")
         return None
 
