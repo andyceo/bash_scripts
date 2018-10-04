@@ -1,7 +1,8 @@
 # This file consists of pathes, placed under the root `paths` key.
 #
-# Each path can have 3 subkeys (must contain at least one):
+# Each path can have 4 subkeys (must contain at least one):
 #
+#   - skip: if this subkey set to True or to value that cast to boolean True, this path skipped from testing
 #   - path_parameters: to set route path templating parameters (the path part in {curly} brackets)
 #   - get: get parameters that goes after `?` in url, corresponded to OpenAPI path.get.parameters
 #   - post: request bodies to be sended to API endpoint, corresponded to OpenAPI path.post.requestBody
@@ -15,6 +16,15 @@
 
 paths:
 
+  /blocks:
+    skip: True
+    post:
+      - |
+        {
+          "header": {
+            "difficulty": "291"
+          }
+        }
 
   /utils/seed/{length}:
 
