@@ -6,43 +6,54 @@
 #   - get: get parameters that goes after `?` in url, corresponded to OpenAPI path.get.parameters
 #   - post: request bodies to be sended to API endpoint, corresponded to OpenAPI path.post.requestBody
 #
-# Every subkey is a list of strings, each string should be a correct JSON string.
+# `path_parameters` and `get` subkeys are list of objects, each object contain key as parameter name and its value.
+#
+# `post` subkey is a list of strings, each string should contain payload in format that your API endpoint expected,
+# such as a correct JSON, XML, plain text string.
+#
+# Example:
 
 paths:
+
 
   /utils/seed/{length}:
 
     path_parameters:
-      - |
-          {"length": 123}
+      - length: 123
 
     get:
-      - |
-          {"offset": 0}
+      - offset: 0
+      - offset: 1
+      - offset: 20
+        some_another_param: some_value
 
-      - |
-          {"offset": 1}
-
-      - |
-          {"offset": 20}
 
   /blocks/lastHeaders/{count}/{offset}:
+
     path_parameters:
-      - |
-          {
-              "count": 1,
-              "offset": 4
-          }
+      - count: 1
+        offset: 4
 
-      - |
-          {
-              "count": 0,
-              "offset": 3
-          }
+      - count: 0
+        offset: 3
 
-      - |
-        {"count": 2,"offset": 0}
+      - count: 2
+        offset: 0
+
 
   /utils/hash/blake2b:
+
     post:
       - '"123qwe"'
+
+
+  /blocks/delete_with_filter:
+
+    post:
+      - |
+        {
+          "parentId": "00d2a8d21113598ea924329f9520905693e914bac6235255b74fd3b8016171aa",
+          "some_field": "some_value"
+        }
+
+      - '{"headerId": "2ab9da11fc216660e974842cc3b7705e62ebb9e0bf5ff78e53f9cd40abadd117"}'
