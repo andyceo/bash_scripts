@@ -20,6 +20,14 @@ from openapi_core import create_spec
 from openapi_core.shortcuts import RequestValidator, ResponseValidator
 from openapi_core.wrappers.base import BaseOpenAPIRequest, BaseOpenAPIResponse
 
+counters = {
+    'skips': 0,
+    'errors': 0,
+    'paths': 0,
+    'methods': {},
+    'requests': 0
+}
+
 
 class RequestsOpenAPIRequest(BaseOpenAPIRequest):
     def __init__(self, request, path_pattern=None, path_params=None):
@@ -127,7 +135,7 @@ def path_parameter_substitute(path, parameters):
     until parameters for substitution run out"""
 
     if path in parameters['paths'] and 'skip' in parameters['paths'][path] and parameters['paths'][path]:
-        print("Skipping, this path is set to skip tests")
+        skip("This path is set to skip tests")
         return None
 
     match = re.search('{(.+?)}', path)
@@ -139,7 +147,7 @@ def path_parameter_substitute(path, parameters):
                 real_path = path
 
                 if not isinstance(params, dict):
-                    print('Skipping, path parameters example payload is incorrect: {}'.format(params))
+                    skip('Path parameters example payload is incorrect: {}'.format(params))
                     continue
 
                 for parameter in match.groups():
@@ -150,23 +158,30 @@ def path_parameter_substitute(path, parameters):
                         print('Path parameter {} does not exists in given parameters to substitute'.format(parameter))
 
                 if missing_parameters:
-                    print('Skipping, this path has {} unspecified path parameters (templates) in URL'
-                          .format(len(missing_parameters)))
-                    print()
+                    skip('This path has {} unspecified path parameters (templates) in URL'
+                         .format(len(missing_parameters)))
                     continue
 
                 yield real_path, path, {parameter: params[parameter]}
 
         else:
-            print('Skipping, path has no path parameters example payload to substitute')
-            print()
+            skip('Path has no path parameters example payload to substitute')
 
     else:
         yield path, path, {}
 
 
+def skip(msg):
+    """Print message why skipping validation and count skips"""
+    global counters
+    counters['skips'] += 1
+    print(color("[SKIP]: {}".format(msg), fg='yellow'))
+    print()
+
+
 def validate_request(req, path_pattern, path_params, spec, url):
     print('Validating URL: {}'.format(url))
+    counters['requests'] += 1
     openapi_request = RequestsOpenAPIRequest(req, path_pattern, path_params)
     validator = RequestValidator(spec)
     result = validator.validate(openapi_request)
@@ -197,45 +212,60 @@ def validate_request(req, path_pattern, path_params, spec, url):
 def validate_requests_and_responses(spec_dict, api_url, parameters=None):
     parameters = parameters if parameters else {'paths': {}}
     spec = create_spec(spec_dict)
-    total_errors_count = 0
+    global counters
 
     for path, path_object in spec.paths.items():
+        counters['paths'] += 1
         for method, operation in path_object.operations.items():
-            print('{} {}'.format(method.upper(), path))
+
+            method_upper = method.upper()
+
+            if method_upper not in counters['methods']:
+                counters['methods'][method_upper] = 1
+            else:
+                counters['methods'][method_upper] += 1
+
+            print('{} {}'.format(method_upper, path))
+
             for real_path, path_pattern, path_params in path_parameter_substitute(path, parameters):
                 if method == 'get':
                     if path in parameters['paths'] and 'get' in parameters['paths'][path]:
                         for params in parameters['paths'][path]['get']:
                             if not isinstance(params, dict):
-                                print('Skipping, GET method example payload is incorrect: {}'.format(params))
+                                skip('GET method example payload is incorrect: {}'.format(params))
                                 continue
                             url = api_url + real_path
                             req = requests.Request('GET', url, params=params)
-                            total_errors_count += validate_request(req, path_pattern, path_params, spec, url)
+                            counters['errors'] += validate_request(req, path_pattern, path_params, spec, url)
                     else:
                         url = api_url + real_path
                         req = requests.Request('GET', url)
-                        total_errors_count += validate_request(req, path_pattern, path_params, spec, url)
+                        counters['errors'] += validate_request(req, path_pattern, path_params, spec, url)
                 elif method == 'post':
                     if path in parameters['paths'] and 'post' in parameters['paths'][path]:
                         for post_payload_string in parameters['paths'][path]['post']:
                             url = api_url + real_path
                             req = requests.Request('POST', url, data=post_payload_string.strip(),
                                            headers={'content-type': list(operation.request_body.content.keys())[0]})
-                            total_errors_count += validate_request(req, path_pattern, path_params, spec, url)
+                            counters['errors'] += validate_request(req, path_pattern, path_params, spec, url)
                     else:
-                        print('Skipping, POST method has no example payload to test')
-                        print()
+                        skip('POST method has no example payload to test')
                         continue
                 else:
-                    print('Skipping, no GET or POST methods defined for this path')
-                    print()
+                    skip('no GET or POST methods defined for this path')
                     continue
 
-    if total_errors_count:
-        print()
-        print(color(' [FAIL] Total {:d} errors found '.format(total_errors_count), fg='white', bg='red',
-                    style='bold'))
+    # Print total stats
+    print()
+    print(color(' Total paths discovered: {}'.format(counters['paths']), fg='white', style='bold'))
+    print(color(' Methods discovered: ', fg='white', style='bold'))
+    for method, count in counters['methods'].items():
+        print(color('  {}: {}'.format(method, count), fg='white', style='bold'))
+    print(color(' Total requests made: {}'.format(counters['requests']), fg='white', style='bold'))
+    if counters['skips']:
+        print(color(' [SKIP] Total {:d} skips '.format(counters['skips']), fg='white', bg='yellow', style='bold'))
+    if counters['errors']:
+        print(color(' [FAIL] Total {:d} errors found '.format(counters['errors']), fg='white', bg='red', style='bold'))
         return 1
     else:
         return 0
