@@ -132,9 +132,9 @@ def path_parameter_substitute(path, parameters):
             # Path has path parameters (templates), calculate them first or skip path from testing
             for params_json_string in parameters['paths'][path]['path_parameters']:
                 params = json.loads(params_json_string)
+                missing_parameters = []
+                real_path = path
                 for parameter in match.groups():
-                    missing_parameters = []
-                    real_path = path
                     if parameter in params:
                         real_path = real_path.replace('{' + parameter + '}', str(params[parameter]))
                     else:
