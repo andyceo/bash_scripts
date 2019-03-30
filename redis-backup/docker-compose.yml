@@ -1,14 +1,19 @@
-version: '3.4'
+version: '3.7'
 
 services:
 
   redis:
-    image: redis:4-alpine
+    image: redis:alpine
+    networks:
+      - redis
     volumes:
       - redis:/data
 
   redis-backup:
     image: redis-backup
+    command: /redis-backup.sh
+    networks:
+      - redis
     build:
       context: ./
       dockerfile: ./Dockerfile
@@ -21,4 +26,7 @@ services:
       - redis
 
 volumes:
+  redis:
+
+networks:
   redis:
