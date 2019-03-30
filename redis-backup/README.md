@@ -5,16 +5,30 @@ This is a docker service to backup Redis data directory to specific remote host 
 
 ## Quick start
 
+### Make backup once
+
 By default, in case of your redis is running in docker container, just provide host directories with Redis data directory and backups:
 
-    sudo docker run --rm --net=redis_default -e MONGO_HOST=redis \
+    sudo docker run --rm --net=redis -e MONGO_HOST=redis \
         -v /redis/data/directory/on/host/system:/data:ro \
         -v /redis/backup/directory/on/host/system:/redisbackup:rw \
-        andyceo/redis-backup
-        
+        andyceo/redis-backup /redis-backup.sh
+
 This will start container that will backup your redis and delete itself after.
 
 Also take a look at provided `docker-compose.yml` for reference.
+
+
+### Make backup service (backup every hour)
+
+If you want this container as a service that periodically backups your Redis data, do something like this:
+
+    sudo docker run -d --net=redis -e MONGO_HOST=redis \
+        -v /redis/data/directory/on/host/system:/data:ro \
+        -v /redis/backup/directory/on/host/system:/redisbackup:rw \
+        andyceo/redis-backup
+
+This service will start backup every hour on 37-th minute (see Dockerfile).
 
 
 ## Configuration
