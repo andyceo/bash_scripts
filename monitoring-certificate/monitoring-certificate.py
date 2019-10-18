@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from colors import color
-from pylibs import influxdb
-from pylibs import utils
 import argparse
 import os
 import sys
 import time
+from colors import color
+from pylibs import dbinflux
+from pylibs import utils
 
 SEC_IN_DAY = 60 * 60 * 24  # number of seconds in a day
 MAX_CERT_AGE = 90  # maximum certificate age, days
@@ -42,17 +42,17 @@ def save_to_influxdb(timestamp, domain, fields):
     influxdb_password = utils.argparse_get_filezed_value(args, 'influxdb-password')
     try:
         json_body = [{
-            "time": influxdb.timestamp_to_influxdb_format(timestamp),
+            "time": dbinflux.timestamp_to_influxdb_format(timestamp),
             "measurement": "monitoring-certificate",
             "tags": {'domain': domain},
             "fields": fields
         }]
-        client = influxdb.InfluxDBClient(args.influxdb_host, args.influxdb_port, args.influxdb_user,
+        client = dbinflux.InfluxDBClient(args.influxdb_host, args.influxdb_port, args.influxdb_user,
                                          influxdb_password, args.influxdb_database)
         client.write_points(json_body)
         utils.message('Domain {} with check result {} was saved to InfluxDB on timestamp {}'
                       .format(domain, fields['check_result'], timestamp))
-    except (influxdb.InfluxDBClientError, influxdb.InfluxDBServerError) as e:
+    except (dbinflux.InfluxDBClientError, dbinflux.InfluxDBServerError) as e:
         utils.message('Error saving domain {}, check result {} to InfluxDB on timestamp {}! Exception: {}'
                       .format(domain, fields['check_result'], timestamp, e))
 
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     parser.add_argument('--save-to-influxdb', action='store_true', help='Save domains check results to influxdb '
                                                                         'or just output them to console')
 
-    influxdb.argparse_add_influxdb_options(parser)
+    dbinflux.argparse_add_influxdb_options(parser)
 
     args = parser.parse_args()
 
