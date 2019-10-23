@@ -5,7 +5,14 @@ set -e
 if [ $# -lt 2 ]; then
   SCRIPT_NAME=$(basename $0);
   echo "No arguments supplied. Usage: $SCRIPT_NAME <SERVICE_NAME> '<EXEC_COMMAND>' ['<WEBHOOK>']"
-  echo "Example: $SCRIPT_NAME databases influxdb 1"
+  echo
+  echo "Example with webhook:"
+  echo "    $SCRIPT_NAME httpd_nginx 'nginx -s reload' 'http://some-monitoring-service/nginx-reload-status'"
+  echo
+  echo "Example for usage inside host cron:"
+  echo "    /usr/local/bin/$SCRIPT_NAME httpd_nginx 'nginx -s reload' >> /var/logs/docker-service-exec/docker-service-exec-hostname.log 2>&1"
+  echo
+  echo "This script take service name and command to run inside service's container. Webhook is optional, if set, script send HTTP POST to given url with results in json format. Deploy this script and related cron job to every swarm node, because you probably don't know what node hosted service container."
   exit 1
 fi
 
