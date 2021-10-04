@@ -1,4 +1,7 @@
-The andyceo's bash scripts collection.
+Bash Scripts
+============
+
+The small projects, written with Bash, Python or PHP, and (may be) packaged with Docker.
 
 Scripts working with Drush (Drupal Shell), virtual box virtual machines, etc.
 
